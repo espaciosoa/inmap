@@ -20,7 +20,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 
 const dbConnection = require('./db')(process.env.HOST, process.env.MONGO_PORT, process.env.MONGO_DB_NAME);
-const { Room } = require("./model/allModels")
+const { Room, RoomMeasurement } = require("./model/allModels")
 
 
 
@@ -34,9 +34,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Define routes for all REST methods
 app.get('/', async (req, res) => {
-  const allData = await Room.find({}).exec()
-
-  res.json(allData)
+  const allRooms = await Room.find({}).exec()
+  const allMeasurements = await RoomMeasurement.find({}).exec()
+  res.json({rooms:allRooms, measurements: allMeasurements})
   // res.send('TODO: Show all database records');
 });
 
@@ -49,7 +49,9 @@ app.post('/', async (req, res) => {
   // Important to think about how to store data in the collection (all together has the problem of updating that is costly)
 
   // let id = new ObjectId(req.params.id);
-  result = await testInsert("myRoom")
+  result = await testInsertMeasurements(req.body)
+
+
   res.json(result);
 });
 
@@ -87,19 +89,26 @@ async function testInsert(roomName) {
   console.log("TEST INSERT")
   console.log(Room)
 
+  return Room.create({name:roomName, propTest1:"Hey", propTest2: "Ho"})
+}
 
 
-  // const room = new Room({ name: roomName }); // Don't set `_id`
-  // const savedRoom = await room.save();
+async function testInsertMeasurements(json) {
+  
+  console.log("TEST INSERT COORDS")
+  
+  let nuMeasurement = new RoomMeasurement(json)
 
-  // console.log("Room saved:", savedRoom);
-
-  return Room.create({name:roomName, crap:"Hey", oye: "whatsapp"})
+  return nuMeasurement.save()
 }
 
 
 
+
 async function removeAll(){
+
+
+  RoomMeasurement.deleteMany({}).exec()
 
   return Room.deleteMany({}).exec()
 

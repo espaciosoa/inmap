@@ -3,6 +3,10 @@ const Schema = mongoose.Schema
 
 const RoomMeasurementSchema = new Schema({
 
+    roomId: {type: mongoose.Schema.Types.ObjectId, ref: 'Room'},
+    timestamp : String,
+    position: mongoose.Schema.Types.Mixed,
+    signalMeasurement: mongoose.Schema.Types.Mixed
 
 }, {
     versionKey: false,
