@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot generated plane prototype</title>
+    <style>
+        :root {
+            --main-color: teal;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: var(--main-color);
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+    <h1>Leaflet Test</h1>
+    <pre> by @alreylz</pre>
+    <div id="map"></div>
+
+
+
+
+
+    <script defer>
+
+
+        function matchColorLevel(level) {
+
+            let color = "#FFFFFF"
+            switch (level) {
+                case 0: color = "#FF8282"
+                case 1: color = "#FFC482"
+                case 2: color = "#F0FF82"
+                case 3: color = "#82FF8A"
+                case 4: color = "#82CBFF"
+            }
+            return color
+
+        }
+
+
+
+
+
+        const origin = { lat: 40.41523, lon: -3.70711 };
+
+        
+
+
+        const map = L.map('map').setView([origin.lat, origin.lon], 19);
+
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 22,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+
+
+        // Example points to plot (Cartesian coordinates) 
+        // Mocks the data that should be stored in the database and is to be used for visualization 
+        const points = [
+            { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
+            { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
+            { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
+            { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
+            { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
+            { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
+            { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
+            { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
+            { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
+            { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
+            { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
+            { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
+            { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
+            { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
+            { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
+            { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
+            { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
+        ];
+
+
+
+
+        var myOriginPainted = L.circle(origin, {
+            color: 'orange',
+            fillOpacity: 0.5,
+            radius: 0.5
+        }).addTo(map);
+
+
+
+        /** Function to transform coordinates respect to the "defined origin" to latitute and logitude */
+        function localToGeo(x, y, lat0, lon0) {
+            const metersPerDegreeLat = 111320; // Approximate at equator
+            const metersPerDegreeLon = 111320 * Math.cos(lat0 * (Math.PI / 180)); // Adjust for latitude
+
+            const deltaLat = y / metersPerDegreeLat;
+            const deltaLon = x / metersPerDegreeLon;
+
+            return {
+                lat: lat0 + deltaLat,
+                lon: lon0 + deltaLon
+            };
+        }
+
+
+
+        //Print points
+        points.forEach(c => {
+            const latLongCoords = localToGeo(c.x, c.z, origin.lat, origin.lon)
+            p = L.circle(latLongCoords, {
+                color:  matchColorLevel(c.level),
+                fillOpacity: 0.5,
+                radius: 0.05
+            }).addTo(map);
+        })
+
+
+
+    </script>
+</body>
+
+</html>

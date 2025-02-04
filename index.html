@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot generated plane prototype</title>
+    <style>
+
+        :root{
+            --main-color: teal;
+        }
+
+        body{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: var(--main-color);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Custom graph plotter</h1>
+    <pre> by @alreylz</pre>
+
+    <canvas id="plotCanvas" width="1200" height="500"></canvas>
+
+
+    <input id="fileInput" type="file" />
+    <p id="output"> </p> 
+    <script defer type="module" src="main.js"></script>
+
+
+<script defer >
+
+
+const fileInput = document.getElementById('fileInput');
+        const output = document.getElementById('output');
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0]; // Get the first selected file
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    output.textContent = e.target.result; // Display file contents
+                };
+                reader.readAsText(file); // Read the file as text
+            }
+        });
+
+
+</script>
+
+    <script defer type="module">
+
+        import {sayHi} from "./main.js"
+
+        const canvas = document.getElementById('plotCanvas');
+        const ctx = canvas.getContext('2d');
+
+
+        
+
+      
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const scale = 100;
+        const gridSpacing = 1; // Spacing of grid lines in units
+
+
+
+        // Center of the canvas (origin for Cartesian plane)
+        const originX = canvasWidth / 2;
+        const originY = canvasHeight / 2;
+
+        // Function to transform Cartesian coordinates to canvas coordinates
+        function transformCoordinates(x, y) {
+            return { x: originX + x * scale, y: originY - y * scale };
+        }
+        // Function to draw the grid and units
+        function drawGrid() {
+            ctx.strokeStyle = 'gray';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([4, 4]); // Dotted lines
+
+            // Draw vertical grid lines
+            for (let x = -Math.ceil(originX / scale); x <= Math.ceil((canvasWidth - originX) / scale); x++) {
+                const { x: transformedX } = transformCoordinates(x, 0);
+                ctx.beginPath();
+                ctx.moveTo(transformedX, 0);
+                ctx.lineTo(transformedX, canvasHeight);
+                ctx.stroke();
+            }
+
+            // Draw horizontal grid lines
+            for (let y = -Math.ceil(originY / scale); y <= Math.ceil((canvasHeight - originY) / scale); y++) {
+                const { y: transformedY } = transformCoordinates(0, y);
+                ctx.beginPath();
+                ctx.moveTo(0, transformedY);
+                ctx.lineTo(canvasWidth, transformedY);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]); // Reset line dash for other drawings
+        }
+
+        // Function to draw the axes and unit 
+        function drawAxesAnd() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(0, originY);
+            ctx.lineTo(canvasWidth, originY);
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, canvasHeight);
+            ctx.stroke();
+
+            // Add unit 
+            ctx.fillStyle = 'black';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            //  for x-axis (-z in phone)
+            for (let x = -Math.ceil(originX / scale); x <= Math.ceil((canvasWidth - originX) / scale); x++) {
+                if (x !== 0) {
+                    const { x: transformedX } = transformCoordinates(x, 0);
+                    ctx.fillText(-x, transformedX, originY + 5); // Slight offset below the x-axis
+                }
+            }
+
+            //  for y-axis  (x in phone)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = -Math.ceil(originY / scale); y <= Math.ceil((canvasHeight - originY) / scale); y++) {
+                if (y !== 0) {
+                    const { y: transformedY } = transformCoordinates(0, y);
+                    ctx.fillText(-y, originX - 5, transformedY); // Slight offset to the left of the y-axis
+                }
+            }
+
+
+            // Label for x-axis
+            ctx.fillText('z-axis (forward) ', canvasWidth - 50, originY - 20);
+
+            // Label for z-axis
+            ctx.save();
+            ctx.translate(originX + 20, 10);
+            ctx.rotate(-Math.PI / 2); // Rotate text for z-axis label
+            ctx.fillText('x-axis (right)', 0, 0);
+            ctx.restore();
+
+
+        }
+
+        // Function to draw a point
+        function drawPoint(x, y, color = 'red') {
+            const { x: transformedX, y: transformedY } = transformCoordinates(x, y);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(transformedX, transformedY, 5, 0, Math.PI * 2); // Circle with radius 5
+            ctx.fill();
+            console.log(`Drawing point (${x}, ${y})`)
+        }
+
+        // Function to draw lines connecting points
+        function drawLines(points, color = 'blue') {
+            if (points.length < 2) return; // Need at least two points to draw a line
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+
+
+            ctx.beginPath();
+            const start = transformCoordinates(points[0].x, points[0].z);
+            ctx.moveTo(start.x, start.y);
+
+            for (let i = 1; i < points.length; i++) {
+                const { x, y } = transformCoordinates(points[i].x, points[i].z);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(start.x, start.y);
+            //draw close line
+            console.log("Drawing lines")
+
+
+
+
+            ctx.stroke();
+        }
+
+        // Function to draw an icon at (x, y)
+        function drawIcon(x, y, imageSrc, size = 20) {
+            const { x: transformedX, y: transformedY } = transformCoordinates(x, y);
+
+            const img = new Image();
+            img.src = imageSrc;
+            img.onload = () => {
+                ctx.drawImage(img, transformedX - size / 2, transformedY - size / 2, size, size);
+            };
+            console.log("Drawing icon")
+        }
+
+
+
+
+        // Draw the axes
+        drawGrid()
+        drawAxesAnd()
+
+        // Example points to plot (Cartesian coordinates)
+        const points = [
+
+            { x: -0.7928082, y: -0.9481621, z: -1.5327121 },
+            { x: 1.276402, y: -1.4514962, z: -1.4927666 },
+            { x: 1.8429325, y: -1.4484526, z: -0.74175 },
+            { x: 2.2791092, y: -1.4481357, z: -0.09217739 },
+            { x: 1.9964722, y: -1.4484534, z: 0.12878221 },
+            { x: 2.3124382, y: -1.4485171, z: 0.5447298 },
+            { x: 2.3496757, y: -1.1560327, z: 0.43899673 },
+            { x: 2.9232445, y: -1.4835371, z: 0.7789793 },
+            { x: 3.0188122, y: -1.4834874, z: 0.94221646 },
+            { x: 2.5010853, y: -1.5031501, z: 1.5829906 },
+            { x: 2.250494, y: -1.5031159, z: 1.5310786 },
+            { x: 1.8547566, y: -1.4985006, z: 1.3673253 },
+            { x: 0.9731356, y: -1.4908487, z: 0.80070454 },
+            { x: 0.45117122, y: -1.4890068, z: 0.16238421 },
+            { x: 0.26037943, y: -1.1160464, z: -0.09716594 },
+            { x: 0.5252408, y: -1.1160513, z: -0.28890827 },
+            { x: 0.61974454, y: -1.1160265, z: -0.66309595 }
+        ];
+
+        const cameraPos = { x: 0, y: 0, z: 0 }    // Origin (camera)
+
+        // Plot the points
+        points.forEach(point => drawPoint(point.x, point.z));
+        //Draw camera
+        drawPoint(cameraPos.x, cameraPos.z, "orange")
+
+        drawLines(points)
+
+
+        drawIcon(cameraPos.x, cameraPos.z,
+            "https://media.istockphoto.com/id/1440837734/vector/world-photography-day-photo-album-icon-photography-camera-black-icon-photo-book-take-a-pic.jpg?s=612x612&w=0&k=20&c=6VspBYS2BviPuvDIstXGoX0eXzuqEtX01JZq7gAx0z8=",
+            30)
+
+
+    </script>
+</body>
+
+</html>
