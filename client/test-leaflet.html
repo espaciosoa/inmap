@@ -21,6 +21,12 @@
             background-color: var(--main-color);
         }
 
+        form {
+            display: flex;
+            row-gap: 0.5rem;
+            flex-direction: column;
+        }
+
         #map {
             height: 500px;
             width: 100%;
@@ -30,11 +36,25 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/main.js"></script>
+
 </head>
 
 <body>
-    <h1>Leaflet Test</h1>
+    <h1>Leaflet map test (with Leaflet)</h1>
     <pre> by @alreylz</pre>
+
+
+
+    <form>
+        Reset Plot Origin
+        <input name="latitude" type="text" placeholder="latitude [-90, 90]" required/>
+        <input name="longitude" type="text" placeholder="longitude [-180, 180]" required/>
+        <input name="rotation" type="text" placeholder="rotation (optional)"  />
+       
+        <button type="submit"> Reset</button>
+    </form>
+
     <div id="map"></div>
 
 
@@ -62,79 +82,132 @@
 
 
 
-        const origin = { lat: 40.41523, lon: -3.70711 };
+        let origin = { lat: 40.41523, lon: -3.70711 };
 
-        
-
-
+        // Init map
         const map = L.map('map').setView([origin.lat, origin.lon], 19);
-
         const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 22,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-
-
-        // Example points to plot (Cartesian coordinates) 
-        // Mocks the data that should be stored in the database and is to be used for visualization 
-        const points = [
-            { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
-            { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
-            { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
-            { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
-            { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
-            { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
-            { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
-            { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
-            { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
-            { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
-            { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
-            { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
-            { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
-            { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
-            { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
-            { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
-            { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
-        ];
-
-
-
-
-        var myOriginPainted = L.circle(origin, {
-            color: 'orange',
-            fillOpacity: 0.5,
-            radius: 0.5
-        }).addTo(map);
-
-
-
-        /** Function to transform coordinates respect to the "defined origin" to latitute and logitude */
-        function localToGeo(x, y, lat0, lon0) {
-            const metersPerDegreeLat = 111320; // Approximate at equator
-            const metersPerDegreeLon = 111320 * Math.cos(lat0 * (Math.PI / 180)); // Adjust for latitude
-
-            const deltaLat = y / metersPerDegreeLat;
-            const deltaLon = x / metersPerDegreeLon;
-
-            return {
-                lat: lat0 + deltaLat,
-                lon: lon0 + deltaLon
-            };
-        }
-
-
-
-        //Print points
-        points.forEach(c => {
-            const latLongCoords = localToGeo(c.x, c.z, origin.lat, origin.lon)
-            p = L.circle(latLongCoords, {
-                color:  matchColorLevel(c.level),
-                fillOpacity: 0.5,
-                radius: 0.05
+                maxZoom: 22,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
+
+        let layers = []
+
+
+
+
+        const inputLat = document.querySelector("input[name=latitude]")
+        inputLat.value = origin.lat
+        const inputLong = document.querySelector("input[name=longitude]")
+        inputLong.value = origin.lon
+
+        const inputRot = document.querySelector("input[name=rotation]")
+
+        const form = document.querySelector("form")
+
+
+
+
+
+        form.addEventListener("submit", (ev) => {
+            console.log("Onsubmit ")
+
+            ev.preventDefault()
+            origin = { 
+                lat: validateLat(parseFloat(inputLat.value)),
+                 lon: validateLong(parseFloat(inputLong.value)) 
+                }
+
+                console.log("validated origin", origin)
+
+            clearMapLayers()
+
+
+
+            // Angle to rotate (in degrees)
+            const angle = parseFloat(inputRot.value)
+
+            renderMap(origin, angle)
+
         })
 
+        renderMap(origin)
+
+
+
+
+
+        function clearMapLayers(){
+            layers.forEach((l)=>{
+                map.removeLayer(l)
+            })
+        }
+
+        function renderMap(origin,rotation) {
+
+
+            console.log("Rendering map ", origin)
+
+
+            map.setView([origin.lat, origin.lon])
+            // Example points to plot (Cartesian coordinates) 
+            // Mocks the data that should be stored in the database and is to be used for visualization 
+            const points = [
+                { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
+                { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
+                { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
+                { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
+                { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
+                { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
+                { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
+                { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
+                { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
+                { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
+                { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
+                { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
+                { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
+                { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
+                { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
+                { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
+                { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
+            ];
+
+
+
+            const layerGroupOrigin = L.layerGroup().addTo(map);
+
+            let myOriginPainted = L.circle(origin, {
+                color: 'orange',
+                fillOpacity: 0.5,
+                radius: 0.5
+            }).addTo(layerGroupOrigin);
+            //add to list of layered info, so that re-rendering on change origin can move printed points
+            layers.push(layerGroupOrigin)
+
+
+            const layerGroupOtherPoints = L.layerGroup().addTo(map);
+            //Print points saved from phone into database
+            points.forEach(c => {
+
+
+                const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, origin.lat, origin.lon)
+
+                const latLongCoords = rotation ==undefined ? 
+                localRoomCoordsAsLatLong :   rotatePointMap(localRoomCoordsAsLatLong.lat,localRoomCoordsAsLatLong.lon, origin.lat,origin.lon, rotation)
+
+
+                
+
+                p = L.circle(latLongCoords, {
+                    color: matchColorLevel(c.level),
+                    fillOpacity: 0.5,
+                    radius: 0.05
+                }).addTo(layerGroupOtherPoints);
+            })
+            //add to list of layered info, so that re-rendering on change origin can move printed points
+            layers.push(layerGroupOtherPoints)
+
+        }
 
 
     </script>
