@@ -1,13 +1,19 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-
+const { v4: uuidv4 } = require('uuid');
 const RoomMeasurementSchema = new Schema({
-
-    roomId: {type: mongoose.Schema.Types.ObjectId, ref: 'Room'},
+    _id: {
+        type: String,
+        default: uuidv4,
+      },
+    roomId: {type: String, ref: 'Room'},
     timestamp : String,
     position: mongoose.Schema.Types.Mixed,
-    signalMeasurement: mongoose.Schema.Types.Mixed
-
+    signalMeasurement: mongoose.Schema.Types.Mixed,
+    version: {
+        type: Number,
+        default: 1
+    }
 }, {
     versionKey: false,
     strict: false

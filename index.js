@@ -2,6 +2,7 @@ const https = require('https');
 const fs = require('fs');
 require("dotenv").config()
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const pathCerts = "/etc/letsencrypt/live/test.alreylz.me";
 
 
@@ -23,7 +24,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 
 const dbConnection = require('./db')(process.env.HOST, process.env.MONGO_PORT, process.env.MONGO_DB_NAME);
-const { Room, RoomMeasurement } = require("./model/allModels")
+const { Room, RoomMeasurement, MeasurementSession } = require("./model/allModels")
 
 
 
@@ -33,8 +34,8 @@ const { Room, RoomMeasurement } = require("./model/allModels")
 app.use(express.json());
 // Middleware to parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
-
-
+// To use cookie parser
+app.use(cookieParser());
 // Create the HTTPS server
 https.createServer(sslOptions, app).listen(process.env.PORT, () => {
   console.log(`HTTPS server is running at https://${process.env.HOST}:${process.env.PORT}`);
@@ -45,8 +46,22 @@ https.createServer(sslOptions, app).listen(process.env.PORT, () => {
 
 
 
-const REST_API = require("./routes/rest/Rooms.api")
-app.use('/v1/API', REST_API)
+const APIRoot = require("./routes/rest/index.api")
+app.use('/v1/API/', APIRoot )
+
+
+const RoomAPIEndpoints = require("./routes/rest/Rooms.api")
+app.use('/v1/API/Rooms', RoomAPIEndpoints)
+
+const MeasurementSessionAPIEndpoints = require("./routes/rest/MeasurementSessions.api")
+app.use('/v1/API/MeasurementSessions', MeasurementSessionAPIEndpoints)
+
+const RoomMeasurementsAPIEndpoints = require("./routes/rest/RoomMeasurements.api")
+app.use('/v1/API/RoomMeasurements', RoomMeasurementsAPIEndpoints)
+
+
+
+
 
 const SSR = require("./routes/ssr/Client.ssr")
 app.use('/', SSR)
@@ -57,31 +72,34 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/client'));
 
 async function testInsert(roomName) {
-  
+
   console.log("TEST INSERT")
   console.log(Room)
 
-  return Room.create({name:roomName, propTest1:"Hey", propTest2: "Ho"})
+  return Room.create({ name: roomName, propTest1: "Hey", propTest2: "Ho" })
 }
 
 
 async function testInsertMeasurements(json) {
-  
+
   console.log("TEST INSERT COORDS")
-  
+
   let nuMeasurement = new RoomMeasurement(json)
 
   return nuMeasurement.save()
 }
 
 
+removeAll()
+
+async function removeAll() {
 
 
-async function removeAll(){
-
-  RoomMeasurement.deleteMany({}).exec()
-
-  return Room.deleteMany({}).exec()
+  await RoomMeasurement.deleteMany({}).exec()
+  await MeasurementSession.deleteMany({}).exec()
+  await Room.deleteMany({}).exec()
+  
+  return 
 
 
 }

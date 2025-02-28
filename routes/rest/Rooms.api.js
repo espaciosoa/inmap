@@ -1,44 +1,62 @@
 const express = require('express')
 const router = express.Router()
+const { v4: uuidv4 } = require('uuid');
 
-const { Room, RoomMeasurement } = require("../../model/allModels")
+const { Room } = require("../../model/allModels")
+
+const { authMiddleware } = require("./middlewares/Middlewares.md")
 
 // Define routes for all REST methods
 router.get('/', async (req, res) => {
   const allRooms = await Room.find({}).exec()
-  const allMeasurements = await RoomMeasurement.find({}).exec()
-  res.json({rooms:allRooms, measurements: allMeasurements})
-  // res.send('TODO: Show all database records');
+  res.json(allRooms)
+
 });
 
-router.post('/', async (req, res) => {
-  console.log('POST Request Body:', req.body);
 
+router.post('/', [authMiddleware], async (req, res) => {
+
+
+
+
+  console.log('POST Room', req.body);
+  console.log("Headers", req.headers)
   //- Parse the request
-  //- Check for special thing in the body and remove it, to "reject" request otherwise
-  //- Check get info for a room . Check if one with the same name exists and update in case
-  // Important to think about how to store data in the collection (all together has the problem of updating that is costly)
-
-  // let id = new ObjectId(req.params.id);
-  result = await testInsertMeasurements(req.body)
 
 
-  res.json(result);
+
+  // Check for name of room
+  const room_IncomingObject = req.body
+  delete room_IncomingObject["remoteSync"]
+  delete room_IncomingObject["roomId"]
+
+
+  console.log(room_IncomingObject)
+
+  //Check if exists already something with that name
+  const roomExists = await Room.find({ name: room_IncomingObject.name }).select({ name: 1, _id: 1 }).exec()
+
+  console.log(roomExists)
+
+  if (roomExists && roomExists.length > 0)
+    return res.status(200).json(roomExists)
+
+  const nuRoomID = uuidv4()
+
+  //CREAR OBJETO CON NEW
+    nuRoom = await new Room({
+      ...room_IncomingObject,
+      "_id": nuRoomID,
+    }
+  ) 
+  //.SAVE
+  const insertedRoom = await nuRoom.save()
+  console.log(insertedRoom)
+
+
+  res.json(insertedRoom);
 });
 
-router.put('/', (req, res) => {
-  console.log('PUT Request Body:', req.body);
-  res.send('Received a PUT request');
-});
-
-router.delete('/', (req, res) => {
-  res.send('Received a DELETE request');
-});
-
-router.patch('/', (req, res) => {
-  console.log('PATCH Request Body:', req.body);
-  res.send('Received a PATCH request');
-});
 
 // Catch-all route for unsupported methods
 router.all('*', (req, res) => {

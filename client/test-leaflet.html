@@ -41,17 +41,17 @@
 </head>
 
 <body>
-    <h1>Leaflet map test (with Leaflet)</h1>
-    <pre> by @alreylz</pre>
+    <h1>Mapping client for 5G AR app)</h1>
+    <!-- <pre> by @alreylz</pre> -->
 
 
 
     <form>
         Reset Plot Origin
-        <input name="latitude" type="text" placeholder="latitude [-90, 90]" required/>
-        <input name="longitude" type="text" placeholder="longitude [-180, 180]" required/>
-        <input name="rotation" type="text" placeholder="rotation (optional)"  />
-       
+        <input name="latitude" type="text" placeholder="latitude [-90, 90]" required />
+        <input name="longitude" type="text" placeholder="longitude [-180, 180]" required />
+        <input name="rotation" type="text" placeholder="rotation (optional)" />
+
         <button type="submit"> Reset</button>
     </form>
 
@@ -87,9 +87,9 @@
         // Init map
         const map = L.map('map').setView([origin.lat, origin.lon], 19);
         const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 22,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
+            maxZoom: 22,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
 
         let layers = []
 
@@ -113,21 +113,24 @@
             console.log("Onsubmit ")
 
             ev.preventDefault()
-            origin = { 
+            origin = {
                 lat: validateLat(parseFloat(inputLat.value)),
-                 lon: validateLong(parseFloat(inputLong.value)) 
-                }
+                lon: validateLong(parseFloat(inputLong.value))
+            }
 
-                console.log("validated origin", origin)
+            console.log("validated origin", origin)
 
             clearMapLayers()
 
 
+            const angleConversion = parseFloat(inputRot.value)
+            const angle = Number.isNaN(angleConversion) ? 0 : angleConversion;
+            
 
-            // Angle to rotate (in degrees)
-            const angle = parseFloat(inputRot.value)
+            console.log("angle", angle)
 
             renderMap(origin, angle)
+
 
         })
 
@@ -137,13 +140,13 @@
 
 
 
-        function clearMapLayers(){
-            layers.forEach((l)=>{
+        function clearMapLayers() {
+            layers.forEach((l) => {
                 map.removeLayer(l)
             })
         }
 
-        function renderMap(origin,rotation) {
+        function renderMap(origin, rotation) {
 
 
             console.log("Rendering map ", origin)
@@ -192,11 +195,12 @@
 
                 const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, origin.lat, origin.lon)
 
-                const latLongCoords = rotation ==undefined ? 
-                localRoomCoordsAsLatLong :   rotatePointMap(localRoomCoordsAsLatLong.lat,localRoomCoordsAsLatLong.lon, origin.lat,origin.lon, rotation)
+
+                const latLongCoords = rotation === undefined ?
+                    localRoomCoordsAsLatLong : rotatePointMap(localRoomCoordsAsLatLong.lat, localRoomCoordsAsLatLong.lon, origin.lat, origin.lon, rotation)
 
 
-                
+
 
                 p = L.circle(latLongCoords, {
                     color: matchColorLevel(c.level),
