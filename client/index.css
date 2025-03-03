@@ -196,5 +196,11 @@ input[type="checkbox"]{
 
 
 select{
+    
     padding: 0.2em 1em;
+    border:#3D3D3D;
+}
+
+option{
+    background-color: green;
 }

@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
   //     const allRooms = await Room.find({}).exec()
   //   const allMeasurements = await RoomMeasurement.find({}).exec()
   //   res.json({rooms:allRooms, measurements: allMeasurements})
-  res.sendfile("./client/test-leaflet.html");
+  res.sendfile("./client/index.html");
 });
 
 
