@@ -17,8 +17,6 @@ router.get('/', async (req, res) => {
 router.post('/', [authMiddleware], async (req, res) => {
 
 
-
-
   console.log('POST Room', req.body);
   console.log("Headers", req.headers)
   //- Parse the request
@@ -34,12 +32,19 @@ router.post('/', [authMiddleware], async (req, res) => {
   console.log(room_IncomingObject)
 
   //Check if exists already something with that name
-  const roomExists = await Room.find({ name: room_IncomingObject.name }).select({ name: 1, _id: 1 }).exec()
+  const roomExists = await Room.find({ name: room_IncomingObject.name.trim() }).select({ name: 1, _id: 1, version:1}).exec()
 
+
+  console.log(`YA EXISTE ESA SALA? ${roomExists ? "SI": "NO" }`)
   console.log(roomExists)
 
-  if (roomExists && roomExists.length > 0)
-    return res.status(200).json(roomExists)
+
+
+
+  if (roomExists && roomExists.length > 0){
+    console.log("Returned already existing element")
+    return res.status(200).json(roomExists[0])
+  }
 
   const nuRoomID = uuidv4()
 

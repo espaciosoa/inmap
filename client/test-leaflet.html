@@ -4,64 +4,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plot generated plane prototype</title>
-    <style>
-        :root {
-            --main-color: teal;
-        }
+    <title>5G plot prototyping @alreylz</title>
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
 
-        canvas {
-            border: 1px solid black;
-            background-color: var(--main-color);
-        }
 
-        form {
-            display: flex;
-            row-gap: 0.5rem;
-            flex-direction: column;
-        }
 
-        #map {
-            height: 500px;
-            width: 100%;
-        }
-    </style>
+    <link rel="stylesheet" href="./index.css" />
 
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="/main.js"></script>
-
+    <script src="/main.js" type="module"></script>
 </head>
 
 <body>
-    <h1>Mapping client for 5G AR app)</h1>
-    <!-- <pre> by @alreylz</pre> -->
+    <header class="header">
+        <h1>Mapping client for 5G AR app </h1>
+    </header>
+    <main>
+
+
+        <form class="what-to-plot-selection">
+            <div class="room-choose-container scrollable-max-size">
+                <label>Room visualization:</label>
+                <select data-dynamic="roomsSelect">
+                    <option>Select a room to visualize</option>
+                </select>
+            </div>
+
+            <ul class="session-choose scrollable-max-size" data-dynamic="sessions">
+                <li class="session-item design-only">
+                    <label>
+                        <span class="session-name">Example session</span>
+                    </label>
+                    <input type="checkbox" data-id="" />
+                </li>
+                <!--THIS ID FILLED DYNAMICALLY-->
+            </ul>
+        </form>
+
+
+        <h1>Currently displaying</h1>
+        <div id="measurements">
+            <!--THIS ID FILLED DYNAMICALLY-->
+        </div>
+
+        <section class="grid-form-map">
+            <form class="viz-controls-form">
+                Adjust Plot Origin
+                <input name="latitude" type="text" placeholder="latitude [-90, 90]" required />
+                <input name="longitude" type="text" placeholder="longitude [-180, 180]" required />
+                <input name="rotation" type="text" placeholder="rotation (optional)" />
+                <button type="submit" class="button interactable"> Reset</button>
+            </form>
+            <div id="map"></div>
+        </section>
 
 
 
-    <form>
-        Reset Plot Origin
-        <input name="latitude" type="text" placeholder="latitude [-90, 90]" required />
-        <input name="longitude" type="text" placeholder="longitude [-180, 180]" required />
-        <input name="rotation" type="text" placeholder="rotation (optional)" />
+        <section>
+            Maybe i could add a table showing the measurements and some simple plots
+            <table>
+            </table>
 
-        <button type="submit"> Reset</button>
-    </form>
-
-    <div id="map"></div>
+        </section>
+    </main>
 
 
+    <footer class="footer">
+        <a href="https://espaciosoa.com/">&#169; EspacioSOA</a>
+        <pre>Developed by <a href="https://alejandro-rey.me" >@alreylz</a></pre>
+        <p> Julian Camarillo 26, 6, 28037 Madrid</p>
+    </footer>
 
 
 
-    <script defer>
+
+
+
+    <script defer type="module">
+
+        import {
+            localToGeo, validateLat, validateLong, isNumber, rotatePointMap,
+            getMeasurements, getSessions, getRooms
+        }
+            from "./main.js"
+
+
+        import JSUtils from "./Helpers.js"
+
+        const allSessions = await getSessions()
+        console.log(allSessions)
+
+        const allMeasurements = await getMeasurements();
+        console.log(allMeasurements)
+
+        const allRooms = await getRooms();
+        console.log(allRooms)
+
+
+
+
+        // GLOBAL STATE
+        const room = allRooms[0]
+        // TODO: should allow to display from different sessions.
+        const chosenSession = allSessions[2]
+        const sessionMeasurements = allMeasurements.filter(ms => { return ms.measurementSession == chosenSession._id })
+        // END GLOBAL STATE
+
+
+        const sessionsCheckboxContainer = document.querySelector("[data-dynamic=sessions]")
+        const roomOptionsSelect = document.querySelector("[data-dynamic=roomsSelect]")
+
+
+
+        //For a given array of sessions, shows them as checkboxes
+        function showSessionsAsCheckboxes(parent, dataArray) {
+
+            const option_HTML_Template = `<li class="session-item">
+                    <label>
+                        <span class="session-name">{{sessionId}}</span> |
+                        <span class="session-date">{{sessionDate}}</span>
+                    </label>
+                    <input type="checkbox" data-id="{{sessionId}}" />
+                </li>`
+
+
+
+            const allSessionCheckboxes = []
+
+
+            dataArray.forEach(data => {
+                const myCheckboxes = JSUtils.replaceTemplatePlaceholders(option_HTML_Template,
+                    {
+                        sessionDate: data.timestamp,
+                        sessionId: data._id,
+                    });
+
+                allSessionCheckboxes.push(JSUtils.txtToHTMLNode(myCheckboxes))
+
+            })
+
+            //TODO: Event subscription pending here
+
+
+            parent.replaceChildren(...allSessionCheckboxes)
+        }
+
+
+        //Given the rooms endpoint, shows all the possible rooms as select options
+        function showRoomsAsSelectOptions(selectItem, rooms) {
+
+            const roomOptionHtmlTemplate = `<option data-id={{roomId}}>
+                    {{roomName}}
+                </option>`
+
+
+            const allRoomsAsOptions = []
+
+            rooms.forEach(r => {
+
+                const myOptionNode = JSUtils.replaceTemplatePlaceholders(roomOptionHtmlTemplate,
+                    {
+                        roomId: r._id,
+                        roomName: r.name
+                    });
+
+                allRoomsAsOptions.push(JSUtils.txtToHTMLNode(myOptionNode))
+
+            })
+
+
+            selectItem.replaceChildren(...allRoomsAsOptions)
+
+        }
+
+
+        showRoomsAsSelectOptions(roomOptionsSelect, allRooms)
+        showSessionsAsCheckboxes(sessionsCheckboxContainer, allSessions)
+
+
+        //Showing in the page for which session I am showing info
+        const myDivTemplate = `<section class="currently-displaying"> 
+            <header>
+                <h2> Room: <span class="room-name">{{room}}</span></h2>
+                 <h3 > Session/s:  <span class="session-name">{{session}}</span> </h3>
+            </header> 
+                 <p> Measurements: {{measurements}} </p>       
+              </section>`
+
+
+        const myDiv = JSUtils.replaceTemplatePlaceholders(myDivTemplate, {
+            room: `${room._id} | ${room.name} `,
+            session: chosenSession._id,
+            measurements: sessionMeasurements.length
+        })
+
+        const measurementsContainer = document.querySelector("#measurements")
+        measurementsContainer.append(JSUtils.txtToHTMLNode(myDiv))
+
+
+
+
+
 
 
         function matchColorLevel(level) {
@@ -69,20 +219,30 @@
             let color = "#FFFFFF"
             switch (level) {
                 case 0: color = "#FF8282"
+                    break;
                 case 1: color = "#FFC482"
+                    break;
                 case 2: color = "#F0FF82"
+                    break;
                 case 3: color = "#82FF8A"
+                    break;
                 case 4: color = "#82CBFF"
+                    break;
             }
             return color
 
         }
 
 
+        let origin = {
+            lat: chosenSession.worldPosition.lat,
+            lon: chosenSession.worldPosition.lon
+        }
+
+        console.log(origin)
+        // let origin = { lat: 40.41523, lon: -3.70711 }
 
 
-
-        let origin = { lat: 40.41523, lon: -3.70711 };
 
         // Init map
         const map = L.map('map').setView([origin.lat, origin.lon], 19);
@@ -94,8 +254,6 @@
         let layers = []
 
 
-
-
         const inputLat = document.querySelector("input[name=latitude]")
         inputLat.value = origin.lat
         const inputLong = document.querySelector("input[name=longitude]")
@@ -104,9 +262,6 @@
         const inputRot = document.querySelector("input[name=rotation]")
 
         const form = document.querySelector("form")
-
-
-
 
 
         form.addEventListener("submit", (ev) => {
@@ -125,16 +280,25 @@
 
             const angleConversion = parseFloat(inputRot.value)
             const angle = Number.isNaN(angleConversion) ? 0 : angleConversion;
-            
+
 
             console.log("angle", angle)
 
-            renderMap(origin, angle)
+
+            //TODO: Get shape of what I need every time
+            let points = sessionMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
+
+
+
+            renderMap(origin, points, angle)
 
 
         })
 
-        renderMap(origin)
+
+        let points = sessionMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
+
+        renderMap(origin, points)
 
 
 
@@ -146,7 +310,7 @@
             })
         }
 
-        function renderMap(origin, rotation) {
+        function renderMap(origin, points, rotation) {
 
 
             console.log("Rendering map ", origin)
@@ -155,25 +319,29 @@
             map.setView([origin.lat, origin.lon])
             // Example points to plot (Cartesian coordinates) 
             // Mocks the data that should be stored in the database and is to be used for visualization 
-            const points = [
-                { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
-                { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
-                { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
-                { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
-                { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
-                { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
-                { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
-                { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
-                { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
-                { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
-                { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
-                { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
-                { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
-                { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
-                { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
-                { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
-                { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
-            ];
+            // const points = [
+            //     { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
+            //     { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
+            //     { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
+            //     { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
+            //     { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
+            //     { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
+            //     { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
+            //     { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
+            //     { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
+            //     { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
+            //     { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
+            //     { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
+            //     { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
+            //     { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
+            //     { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
+            //     { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
+            //     { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
+            // ];
+
+
+
+
 
 
 
@@ -202,8 +370,8 @@
 
 
 
-                p = L.circle(latLongCoords, {
-                    color: matchColorLevel(c.level),
+                let circle = L.circle(latLongCoords, {
+                    color: matchColorLevel(c.level || c.qualityLevel),
                     fillOpacity: 0.5,
                     radius: 0.05
                 }).addTo(layerGroupOtherPoints);
@@ -213,8 +381,12 @@
 
         }
 
-
     </script>
+
+
+
+
+
 </body>
 
 </html>

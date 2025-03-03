@@ -90,7 +90,24 @@ async function testInsertMeasurements(json) {
 }
 
 
-removeAll()
+// removeAll()
+
+
+// removeRoom("3eab0ddf-6d81-496b-a123-5f3c7560bcd3")
+
+async function removeRoom(id){
+
+
+
+  await RoomMeasurement.deleteOne({roomId:id}).exec()
+  await MeasurementSession.deleteOne({roomId:id}).exec()
+  await Room.deleteOne({_id:id}).exec()
+
+
+  
+}
+
+
 
 async function removeAll() {
 

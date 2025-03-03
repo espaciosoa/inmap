@@ -1,9 +1,8 @@
 
 
 
-
 /** Function to transform coordinates respect to the "defined origin" to latitute and logitude */
-function localToGeo(x, y, lat0, lon0) {
+export function localToGeo(x, y, lat0, lon0) {
     const metersPerDegreeLat = 111320; // Approximate at equator
     const metersPerDegreeLon = 111320 * Math.cos(lat0 * (Math.PI / 180)); // Adjust for latitude
 
@@ -17,7 +16,7 @@ function localToGeo(x, y, lat0, lon0) {
 }
 
 
-function validateLat(lat) {
+export function validateLat(lat) {
     // [-90, 90] latitude
 
     if (!isNumber(lat))
@@ -31,7 +30,7 @@ function validateLat(lat) {
 
 
 
-function validateLong(long) {
+export function validateLong(long) {
     // [-180, 180] longitude
 
     if (!isNumber(long))
@@ -46,18 +45,18 @@ function validateLong(long) {
 
 
 
-function isNumber(value) {
+export function isNumber(value) {
     return typeof value === 'number';
 }
 
 
 // Function to convert degrees to radians
-function toRadians(degrees) {
+export function toRadians(degrees) {
     return degrees * (Math.PI / 180);
 }
 
 // Function to rotate a point around an origin
-function rotatePointMap(lat, lng, originLat, originLng, angle) {
+export function rotatePointMap(lat, lng, originLat, originLng, angle) {
     const theta = toRadians(angle);
 
     // Convert latitude/longitude to Cartesian coordinates (approximation)
@@ -72,5 +71,45 @@ function rotatePointMap(lat, lng, originLat, originLng, angle) {
 
     return [yPrime, xPrime]; // Return as [latitude, longitude]
 }
+
+
+
+
+
+const API_BASE_URL = "https://test.alreylz.me/v1/API/"
+
+
+
+
+
+
+
+
+
+export async function getMeasurements() {
+    const response = await fetch(API_BASE_URL + "RoomMeasurements", {
+        method: "GET",
+    });
+
+    return await response.json();
+}
+
+
+export async function getSessions() {
+    const response = await fetch(API_BASE_URL + "MeasurementSessions", {
+        method: "GET",
+    });
+
+    return await response.json();
+}
+
+export async function getRooms() {
+    const response = await fetch(API_BASE_URL + "Rooms", {
+        method: "GET",
+    });
+
+    return await response.json();
+}
+
 
 
