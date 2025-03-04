@@ -79,8 +79,8 @@
 
     <footer class="footer">
         <a href="https://espaciosoa.com/">&#169; EspacioSOA</a>
-        <pre>Developed by <a href="https://alejandro-rey.me" >@alreylz</a></pre>
         <p> Julian Camarillo 26, 6, 28037 Madrid</p>
+        <pre>Developed by <a href="https://alejandro-rey.me" >@alreylz</a></pre>
     </footer>
 
 
@@ -95,7 +95,11 @@
             getMeasurements, getSessions, getRooms
         }
             from "./main.js"
+
+        import { getNaturalLanguageDate } from "./converters.js"
+        import {estimateValueIDW_LatLong } from "./interpolations.js"
         import { EventManager } from "./EventManager.js"
+
 
 
         import JSUtils from "./Helpers.js"
@@ -110,22 +114,15 @@
         console.log(allRooms)
 
 
-
-        //Notify when active things happen here.
-
-
-
-
-
-
-
         // GLOBAL STATE
-        const room = allRooms[0]
+        const room = allRooms[2]
         // TODO: should allow to display from different sessions.
-        const chosenSession = allSessions[2]
+        const chosenSession = allSessions.filter(s => s.roomId == room._id)[0]
         const sessionMeasurements = allMeasurements.filter(ms => { return ms.measurementSession == chosenSession._id })
         // END GLOBAL STATE
 
+
+        //MOVE ME TO A SEPARATE FILE WHEN THINGS WORK
         class PageState extends EventManager {
 
             constructor(name = "") {
@@ -144,7 +141,8 @@
                 this._dispatch("onChangeState", this)
             }
 
-            set setActiveRoom(room) {
+            get activeRoom() { return this._activeRoom }
+            set activeRoom(room) {
                 this._activeRoom = room;
                 this._dispatch("onActiveRoomChanged", this._activeRoom);
 
@@ -153,7 +151,6 @@
             }
 
 
-            
 
             addSession(session) {
                 this._activeSessions.push(session)
@@ -169,15 +166,16 @@
             }
 
 
+            get activeSessions() { return this._activeSessions }
 
-            set setActiveSessions(sessions) {
+            set activeSessions(sessions) {
                 this._activeSessions = sessions
                 this._dispatch("onActiveSessionsChanged", this._activeSessions)
                 this.#overallStateChange()
-
             }
 
-            set setActiveMeasurements(measurements) {
+            get activeMeasurements() { return this._activeMeasurements }
+            set activeMeasurements(measurements) {
                 this._activeMeasurements = measurements;
                 this._dispatch("onMeasurementsChanged", this._activeMeasurements);
                 this.#overallStateChange()
@@ -219,8 +217,14 @@
 
 
 
+
+
         const sessionsCheckboxContainer = document.querySelector("[data-dynamic=sessions]")
         const roomOptionsSelect = document.querySelector("[data-dynamic=roomsSelect]")
+
+
+
+
 
 
 
@@ -280,7 +284,10 @@
         //Given the rooms endpoint, shows all the possible rooms as select options
         function showRoomsAsSelectOptions(selectItem, rooms) {
 
-            const roomOptionHtmlTemplate = `<option data-id={{roomId}}>
+            const roomOptionHtmlTemplate = `<option 
+                data-type="room"    
+                value={{roomId}}
+                data-id={{roomId}}>
                     {{roomName}}
                 </option>`
 
@@ -289,13 +296,22 @@
 
             rooms.forEach(r => {
 
-                const myOptionNode = JSUtils.replaceTemplatePlaceholders(roomOptionHtmlTemplate,
+                const myOptionFilledTemplate = JSUtils.replaceTemplatePlaceholders(roomOptionHtmlTemplate,
                     {
                         roomId: r._id,
                         roomName: r.name
                     });
 
-                allRoomsAsOptions.push(JSUtils.txtToHTMLNode(myOptionNode))
+                const optionNode = JSUtils.txtToHTMLNode(myOptionFilledTemplate)
+                // TODO Event subscription:
+
+                selectItem.addEventListener("change", (ev) => {
+                    // console.log("ROOM OPTION CHANGE")
+                    const roomIdSelected = event.target.value
+                    myState.activeRoom = allRooms.filter(r => r._id == roomIdSelected)[0]
+                })
+
+                allRoomsAsOptions.push(optionNode)
 
             })
 
@@ -306,27 +322,73 @@
 
 
         showRoomsAsSelectOptions(roomOptionsSelect, allRooms)
-        showSessionsAsCheckboxes(sessionsCheckboxContainer, allSessions)
 
 
-        //Showing in the page for which session I am showing info
-        const myDivTemplate = `<section class="currently-displaying"> 
-            <header>
-                <h2> Room: <span class="room-name">{{room}}</span></h2>
-                 <h3 > Session/s:  <span class="session-name">{{session}}</span> </h3>
-            </header> 
-                 <p> Measurements: {{measurements}} </p>       
+
+        // Make UI react to changes 
+        myState.subscribe("onActiveRoomChanged", (activeRoom) => {
+
+            showSessionsAsCheckboxes(sessionsCheckboxContainer, allSessions.filter(s => s.roomId == activeRoom._id))
+
+        })
+
+        myState.subscribe("onChangeState", (state) => {
+            showStateInformationSection(state)
+        })
+
+
+
+        function showStateInformationSection(state) {
+
+            //Showing in the page for which session I am showing info
+            const myDivTemplate = `<section class="currently-displaying"> 
+                <header>
+                    <h2> Room: 
+                        <span class="room-name">{{roomName}}</span>
+                        <span class="room-id">{{roomId}}</span>
+                    </h2>
+                    <h3 > Session/s: </h3>
+                        <div class="sessions-displayed-list"> 
+                            <!-- Dynamic filling (list of sessions being displayed)-->
+                        <div class="sessions-displayed-list"> 
+                </header> 
+                 <p> total measurements: {{measurements}} </p>  
+
               </section>`
 
 
-        const myDiv = JSUtils.replaceTemplatePlaceholders(myDivTemplate, {
-            room: `${room._id} | ${room.name} `,
-            session: chosenSession._id,
-            measurements: sessionMeasurements.length
-        })
+            const sessionSpanTemplate = ` <span class="session-name">{{session}}</span> `
 
-        const measurementsContainer = document.querySelector("#measurements")
-        measurementsContainer.append(JSUtils.txtToHTMLNode(myDiv))
+            const allSessionSpansNodes = []
+            state.activeSessions.forEach(s => {
+                const sessionSpanTemplateFilled = JSUtils.replaceTemplatePlaceholders(sessionSpanTemplate, {
+                    session: s._id
+                })
+
+                allSessionSpansNodes.push(JSUtils.txtToHTMLNode(sessionSpanTemplateFilled))
+            })
+
+
+
+            const myStateSummary = JSUtils.replaceTemplatePlaceholders(myDivTemplate, {
+                roomName: `${state.activeRoom.name}`,
+                roomId: `${state.activeRoom._id}`,
+                measurements: sessionMeasurements.length
+            })
+
+
+
+
+            const measurementsContainer = document.querySelector("#measurements")
+
+            const myStateSummaryAlmostFilled = JSUtils.txtToHTMLNode(myStateSummary)
+            const sessionsContainer = myStateSummaryAlmostFilled.querySelector(".sessions-displayed-list")
+
+            sessionsContainer.replaceChildren(...allSessionSpansNodes)
+            measurementsContainer.replaceChildren(myStateSummaryAlmostFilled)
+
+        }
+
 
         function matchColorLevel(level) {
 
@@ -354,9 +416,8 @@
         }
 
         console.log(origin)
-        console.warn("@alreylz - USING ANONYMIZED ORIGIN")
-        origin = { lat: 40.41523, lon: -3.70711 }
-
+        // console.warn("@alreylz - USING ANONYMIZED ORIGIN")
+        // origin = { lat: 40.41523, lon: -3.70711 }
 
 
 
@@ -364,13 +425,18 @@
 
 
         // Init map
-        const map = L.map('map').setView([origin.lat, origin.lon], 19);
+        const map = L.map('map').setView([origin.lat, origin.lon], 20);
         const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 22,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
         let layers = []
+
+
+        console.log("MAP OBJECT", map)
+
+     
 
 
         const inputLat = document.querySelector("input[name=latitude]")
@@ -383,6 +449,8 @@
         const form = document.querySelector(".viz-controls-form")
 
 
+
+        //Gestión de rotar y ajustar origen
         form.addEventListener("submit", (ev) => {
             console.log("Onsubmit ")
 
@@ -405,9 +473,7 @@
 
 
             //TODO: Get shape of what I need every time
-            let points = sessionMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
-
-
+            let points = myState.activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
 
             renderMap(origin, points, angle)
 
@@ -415,9 +481,54 @@
         })
 
 
-        let points = sessionMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
+        let points = sessionMeasurements.map(measurement => {
+            return {
+                _id: measurement._id,
+                ...measurement.position,
+                ...measurement.fullCellSignalStrength,
+                ...measurement.fullCellIdentity,
+                timestamp: measurement.timestamp,
+            }
+        })
+
+   // reference of map events : https://leafletjs.com/reference.html#map-click        
+   map.on("dblclick", (e) => {
+            console.log("DOUBLE CLICK ON MAP", e)
+
+            console.log("POINT TO ESTIMATE VALUE FOR", e)
+            const toEstimatePoint = {lat: e.latlng.lat, 
+                lon: e.latlng.lng}
+                console.log("toEstimatePoint", toEstimatePoint)
+            const knownDataPoints = points.map(p => {
+                console.log("p", p)
+                return { ...p.position, value:p.dbm, ... localToGeo(p.x,p.y, origin.lat,origin.lon) }
+            })
+           console.log("KnownDataPoints", knownDataPoints)
+            const estimated = estimateValueIDW_LatLong(toEstimatePoint, knownDataPoints, 10);
+
+            console.log(`ESTIMATED DBM for unknown point at (${toEstimatePoint.lat}, ${toEstimatePoint.lon}) = ${estimated}`)
+
+
+        })
+
+
+
+        myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
+
+            console.log("ACTIVE MEASUREMENTS CHANGED", activeMeasurements)
+            let points = activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement, } })
+
+            renderMap(origin, points)
+        })
 
         renderMap(origin, points)
+
+
+
+
+
+
+
 
 
 
@@ -429,63 +540,77 @@
             })
         }
 
-        function renderMap(origin, points, rotation) {
 
 
-            console.log("Rendering map ", origin)
 
 
+        /**
+         * origin : lat, lon object
+         * points: array of points with the data to paint
+         * */
+        function renderMap(origin, points, rotation = 0, whatToDisplay) {
+
+
+            whatToDisplay = whatToDisplay || 'level'
+
+
+            console.log("Rendering map 🗺️", origin)
             map.setView([origin.lat, origin.lon])
-            // Example points to plot (Cartesian coordinates) 
-            // Mocks the data that should be stored in the database and is to be used for visualization 
-            // const points = [
-            //     { x: -0.7928082, y: -0.9481621, z: -1.5327121, level: 0 },
-            //     { x: 1.276402, y: -1.4514962, z: -1.4927666, level: 1 },
-            //     { x: 1.8429325, y: -1.4484526, z: -0.74175, level: 1 },
-            //     { x: 2.2791092, y: -1.4481357, z: -0.09217739, level: 1 },
-            //     { x: 1.9964722, y: -1.4484534, z: 0.12878221, level: 1 },
-            //     { x: 2.3124382, y: -1.4485171, z: 0.5447298, level: 1 },
-            //     { x: 2.3496757, y: -1.60327, z: 0.43899673, level: 2 },
-            //     { x: 2.9232445, y: -1.4835371, z: 0.7789793, level: 3 },
-            //     { x: 3.0188122, y: -1.4834874, z: 0.94221646, level: 0 },
-            //     { x: 2.5010853, y: -1.5031501, z: 1.5829906, level: 1 },
-            //     { x: 2.250494, y: -1.5031159, z: 1.5310786, level: 4 },
-            //     { x: 1.8547566, y: -1.4985006, z: 1.3673253, level: 3 },
-            //     { x: 0.9731356, y: -1.4908487, z: 0.80070454, level: 2 },
-            //     { x: 0.45117122, y: -1.4890068, z: 0.16238421, level: 1 },
-            //     { x: 0.26037943, y: -1.1160464, z: -0.09716594, level: 1 },
-            //     { x: 0.5252408, y: -1.1160513, z: -0.28890827, level: 1 },
-            //     { x: 0.61974454, y: -1.1160265, z: -0.66309595, level: 1 }
-            // ];
-
-
-
-
-
-
 
             const layerGroupOrigin = L.layerGroup().addTo(map);
 
-            let myOriginPainted = L.circle(origin, {
+            let myOriginPainted = L.marker(origin, {
                 color: 'orange',
                 fillOpacity: 0.5,
                 radius: 0.5
-            }).addTo(layerGroupOrigin);
-            //add to list of layered info, so that re-rendering on change origin can move printed points
+            }).bindPopup("This is the origin").addTo(layerGroupOrigin);
+            //add to list of layered info, so that re-rendering on change origin can move printed 
             layers.push(layerGroupOrigin)
 
 
-            const layerGroupOtherPoints = L.layerGroup().addTo(map);
-            //Print points saved from phone into database
+            const layerGroupOther = L.layerGroup().addTo(map);
+            //Print  saved from phone into database
             points.forEach(c => {
-
-
                 const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, origin.lat, origin.lon)
-
-
                 const latLongCoords = rotation === undefined ?
                     localRoomCoordsAsLatLong : rotatePointMap(localRoomCoordsAsLatLong.lat, localRoomCoordsAsLatLong.lon, origin.lat, origin.lon, rotation)
 
+
+                const popupDataForItem = `<div class="tooltip-point-detail">  
+                        <header > 
+                            <h4>Data point detail :</h4>
+                        </header>
+                        <div class="two-cols center"> 
+                            <div class="signal-data"> 
+                                    <span> <span class="bold">dbm</span>: {{dbm}} </span>
+                                    <span> <span class="bold">asuLevel</span>: {{asuLevel}} </span>
+                                    <span> <span class="bold">qualityLevel</span>: {{level}}</span>
+                                    <span> <span class="bold">signalType</span>: {{type}} </span>
+                                    <!-- Now the optionals -->    
+                                    <span> {{restSignalData}}</span>
+                            </div>
+                            <div class="cell-identity">
+                                <span> <span class="bold">Operator</span>: {{operator}} </span>
+                                <span> <span class="bold">Bandwidth</span>: {{bandwidth}} </span>
+                            </div> 
+                        </div>
+                        <footer>
+                            <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
+                        </footer>
+                        </div>`
+
+                const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
+                    {
+                        timestamp: getNaturalLanguageDate(c.timestamp),
+                        dbm: c.dbm,
+                        asuLevel: c.asuLevel,
+                        level: c.level,
+                        type: c.type,
+                        // restSignalData : `cqi:${c.cqi}, rsrp:${c.rsrp}, rssi:${c.rssi}`,
+                        operator: c.operatorAlphaLong,
+                        bandwidth: c.bandwidth
+
+                    })
 
 
 
@@ -493,10 +618,17 @@
                     color: matchColorLevel(c.level || c.qualityLevel),
                     fillOpacity: 0.5,
                     radius: 0.05
-                }).addTo(layerGroupOtherPoints);
+                }).bindPopup(popupDataForItemReplaced).addTo(layerGroupOther);
             })
-            //add to list of layered info, so that re-rendering on change origin can move printed points
-            layers.push(layerGroupOtherPoints)
+            //add to list of layered info, so that re-rendering on change origin can move printed 
+            layers.push(layerGroupOther)
+
+
+
+            // var layerControl = L.control.layers(layerGroupOther).addTo(map);
+
+
+
 
         }
 

@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
   // incoming_RoomMeasurement[] = 
   // incoming_RoomMeasurement.fullCellIdentity = 
 
-  console.log(incoming_RoomMeasurement)
+  // console.log(incoming_RoomMeasurement)
 
   //TODO: check that the measurements are associated to an existing session and existing room
   const roomMeasurementId = uuidv4()
@@ -40,7 +40,8 @@ router.post('/', async (req, res) => {
   })
 
   const insertedMeasurement = await nuRoomMeasurement.save()
-  
+
+  console.log("Recorded new measurement : "+ Date.now().toLocaleString())
 
   res.json(insertedMeasurement);
 });

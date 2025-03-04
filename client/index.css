@@ -204,3 +204,77 @@ select{
 option{
     background-color: green;
 }
+
+
+
+/* Overiding styles of leaflet */
+.leaflet-popup-content-wrapper.leaflet-popup-content-wrapper{
+
+    /* background-color: #ff605a; */
+}
+
+
+
+
+
+.tooltip-point-detail{
+   
+    display: flex;
+    
+    flex-direction: column;
+    gap:0.2em;
+
+    /* background-color: rebeccapurple; */
+
+    > *{
+        padding: 0.2em;
+    }
+
+    .signal-data,.cell-identity{
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+    }
+
+
+
+    
+
+    span{
+        text-align: left;
+    }
+    header{
+        text-align: left;
+        align-self: flex-start;
+        /* background-color: #5ad8ff; */
+    }
+
+    footer{
+        /* background-color: #93f293; */
+        font-size: smaller;
+    }
+
+
+}
+
+
+.timestamp.detail{
+
+}
+
+
+.two-cols{
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap:0.2em;
+    
+}
+
+.two-cols.center{
+    justify-items: center;
+    align-items: center;
+}
+
+.bold {
+    font-weight: bold;
+}
