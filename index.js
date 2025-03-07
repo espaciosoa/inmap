@@ -3,6 +3,7 @@ const fs = require('fs');
 require("dotenv").config()
 const express = require('express');
 const cookieParser = require('cookie-parser');
+var cors = require('cors')
 const pathCerts = "/etc/letsencrypt/live/test.alreylz.me";
 
 
@@ -16,7 +17,7 @@ const sslOptions = {
 };
 
 const app = express();
-
+app.use(cors())
 
 
 const ObjectId = require('mongoose').Types.ObjectId;

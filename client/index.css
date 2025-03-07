@@ -1,6 +1,8 @@
 :root {
     --main-color: teal;
     --bg-color: #3D3D3D;
+
+    
 }
 
 
@@ -9,7 +11,7 @@
     padding: 0;
     box-sizing: border-box;
 
-    font-family: "Roboto";
+    font-family: 'Times New Roman', Times, serif;
     text-align: center;
 }
 
@@ -28,6 +30,10 @@ body {
     color: white;
 }
 
+
+
+
+
 .header,
 .footer {
     display: flex;
@@ -37,6 +43,25 @@ body {
     justify-content: center;
     min-height: 10vh;
     background-color: var(--bg-color);
+}
+
+
+.header{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.2em 1em;
+
+    div{
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        gap: 2em;
+    }
+    img{
+        max-height: 2em;
+    }
+
 }
 
 main {

@@ -45,7 +45,7 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         map(kdp => {
             return {
                 ...kdp,
-                distance: getHaversineDistanceKM(dataPoint.lat, dataPoint.lon, kdp.lat, kdp.lon)/1000
+                distance: getHaversineDistanceKM(dataPoint.lat, dataPoint.lon, kdp.lat, kdp.lon) / 1000
             }
         }
         ).filter(kdp => kdp.distance <= searchRadius)
@@ -59,17 +59,19 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         const v_i = kdp.value
 
         weightedValueSummatory += w_i * v_i
-
-        console.log("v_i", v_i)
-
         weightsSummatory += w_i;
     });
 
 
-    console.log("wValueSum", weightedValueSummatory)
-    console.log("wSummatory", weightsSummatory)
+
 
     let estimatedValue = weightedValueSummatory / weightsSummatory;
+
+    console.groupCollapsed("harvesineComputation ")
+    console.log("wValueSum =", weightedValueSummatory)
+    console.log("wSummatory =", weightsSummatory)
+    console.log("estimation = wValueSum/wSummatory =", estimatedValue)
+    console.groupEnd()
 
     return estimatedValue
 
@@ -117,7 +119,7 @@ export function getHaversineDistanceKM(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
     const c = 2 * atan2(sqrt(a), sqrt(1 - a));
     const d = R * c;
 
-    console.log("Computed harvesine distance", d)
+    // console.log("Computed harvesine distance", d)
 
     return d; // distance in km
 }

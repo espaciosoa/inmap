@@ -5,13 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "npx nodemon index.js",
+    "dev:debug": "npx nodemon --inspect index.js"
   },
   "author": "alreylz",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.21.2",
+    "heatmap.js": "^2.0.5",
     "mongoose": "^8.9.6",
     "uuid": "^11.1.0"
   },
