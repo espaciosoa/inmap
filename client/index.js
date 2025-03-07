@@ -10,6 +10,7 @@ import { EventManager } from "./EventManager.js"
 import { mockHeatmapData } from "./Mock.js"
 
 import JSUtils from "./Helpers.js"
+import { showRoomsAsSelectOptions, showSessionsAsCheckboxes } from "./DynamicHtml.js"
 // import h337 from './heatmap.js/heatmap.js'; // Ensure the path matches
 // import HeatmapOverlay from './heatmap.js/leaflet-heatmap/leaflet-heatmap.js';
 
@@ -25,30 +26,21 @@ console.log("📶 MEASUREMENTS ", allMeasurements)
 
 
 
-
-
-
-
-// GLOBAL STATE
-const room = allRooms[2]
-// TODO: should allow to display from different sessions.
-const chosenSession = allSessions.filter(s => s.roomId == room._id)[0]
-const sessionMeasurements = allMeasurements.filter(ms => { return ms.measurementSession == chosenSession._id })
-// END GLOBAL STATE
-
-
 //MOVE ME TO A SEPARATE FILE WHEN THINGS WORK
 class PageState extends EventManager {
 
-    constructor(name = "") {
+    constructor(name = "",
+        defaultRoom,
+        defaultSessions
+    ) {
         super();
 
-        this._activeRoom = null;
-        this._activeSessions = [];
+        this._activeRoom = defaultRoom ?? null;
+        this._activeSessions = defaultSessions ?? [];
         this._activeMeasurements = [];
-
-
+        this._dispatch("onInit", (state) => console.log("init @state", state))
         this.subscribe("onChangeState", (state) => console.log("@state", state))
+
     }
 
 
@@ -59,9 +51,8 @@ class PageState extends EventManager {
     get activeRoom() { return this._activeRoom }
     set activeRoom(room) {
         this._activeRoom = room;
+        this._activeSessions = []
         this._dispatch("onActiveRoomChanged", this._activeRoom);
-
-
         this.#overallStateChange()
     }
 
@@ -71,7 +62,6 @@ class PageState extends EventManager {
         this._activeSessions.push(session)
         this._dispatch("onActiveSessionsChanged", this._activeSessions)
         this.#overallStateChange()
-
     }
     removeSession(session) {
         this._activeSessions.pop(session)
@@ -101,157 +91,48 @@ class PageState extends EventManager {
 }
 
 
-// trying to encapsulate global state in a class
-const myState = new PageState("visualization_state")
-
-console.log("My state")
-console.log(myState)
-
-
-
-myState.subscribe("onChangeState", (state) => {
-
-})
-
-//TESTING OF THE MY STATE
-myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
-    console.log("ACTIVE SESSIONS CHANGED", activeSessions)
-})
-
-myState.subscribe("onActiveRoomChanged", (activeRoom) => {
-    console.log("ACTIVE ROOM CHANGED", activeRoom)
-})
-
-myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
-
-    console.log("ACTIVE MEASUREMENTS CHANGED", activeRoom)
-})
+// Encapsulating state in an object
+const myState = new PageState(
+    "visualization_state",
+    /*default room */ allRooms[0],
+    /*default sessions */ allSessions.filter(s => s.roomId == allRooms[0]._id)
+)
 
 
-
-
-
-
-
-
+// HTML Container of session checkboxes (that modify state)
 const sessionsCheckboxContainer = document.querySelector("[data-dynamic=sessions]")
+// HTMLSelect item to display room options (changing it modifies state)
 const roomOptionsSelect = document.querySelector("[data-dynamic=roomsSelect]")
 
-
-
-
-
-
-
-//For a given array of sessions, shows them as checkboxes
-function showSessionsAsCheckboxes(parent, dataArray) {
-
-    const option_HTML_Template = `<li class="session-item">
-            <label>
-                <span class="session-name">{{sessionId}}</span> |
-                <span class="session-date">{{sessionDate}}</span>
-            </label>
-            <input type="checkbox" data-type="session" data-id="{{sessionId}}" />
-        </li>`
-
-
-
-    const allSessionCheckboxes = []
-
-
-    dataArray.forEach(data => {
-        const myCheckboxes = JSUtils.replaceTemplatePlaceholders(option_HTML_Template,
-            {
-                sessionDate: data.timestamp,
-                sessionId: data._id,
-            });
-
-
-        const checkboxDOM_Node = JSUtils.txtToHTMLNode(myCheckboxes)
-        //TODO: Event subscription pending here
-        console.log("Adding onChange events to checkboxes")
-        checkboxDOM_Node.addEventListener("change", (ev) => {
-            const checkbox = ev.target
-            const isActive = checkbox.checked
-            console.log(checkbox.dataset)
-            const toActivateThing = checkbox.dataset.type
-            const toActivateId = checkbox.dataset.id
-            // myState.setActiveSessions()
-            console.log(`${checkbox} ${toActivateThing} CHANGED isActive ? ${isActive} | id: ${toActivateId}  `)
-
-
-            isActive ?
-                myState.addSession(allSessions.filter(e => e._id === toActivateId)[0])
-                : myState.removeSession(allSessions.filter(e => e._id === toActivateId)[0])
-
-        })
-
-        allSessionCheckboxes.push(checkboxDOM_Node)
-    })
-
-
-
-
-    parent.replaceChildren(...allSessionCheckboxes)
-}
-
-
-//Given the rooms endpoint, shows all the possible rooms as select options
-function showRoomsAsSelectOptions(selectItem, rooms) {
-
-    const roomOptionHtmlTemplate = `<option 
-        data-type="room"    
-        value={{roomId}}
-        data-id={{roomId}}>
-            {{roomName}}
-        </option>`
-
-
-    const allRoomsAsOptions = []
-
-    rooms.forEach(r => {
-
-        const myOptionFilledTemplate = JSUtils.replaceTemplatePlaceholders(roomOptionHtmlTemplate,
-            {
-                roomId: r._id,
-                roomName: r.name
-            });
-
-        const optionNode = JSUtils.txtToHTMLNode(myOptionFilledTemplate)
-        // TODO Event subscription:
-
-        selectItem.addEventListener("change", (ev) => {
-            // console.log("ROOM OPTION CHANGE")
-            const roomIdSelected = event.target.value
-            myState.activeRoom = allRooms.filter(r => r._id == roomIdSelected)[0]
-        })
-
-        allRoomsAsOptions.push(optionNode)
-
-    })
-
-
-    selectItem.replaceChildren(...allRoomsAsOptions)
-
-}
-
-
-showRoomsAsSelectOptions(roomOptionsSelect, allRooms)
+// Init UI with the Initial State
+if (myState !== null) {
+    showRoomsAsSelectOptions(roomOptionsSelect, myState, allRooms, myState.activeRoom)
+    showSessionsAsCheckboxes(sessionsCheckboxContainer, myState, myState.activeSessions.map(s => s), myState.activeSessions)
+    showStateInformationSection(myState)
+    const activeSessionIds = myState.activeSessions.map(s => s._id)
+    myState.activeMeasurements = allMeasurements.filter(m => activeSessionIds.includes(m.measurementSession))
+    // console.log("SET ACTIVE MEASUREMENT INITIAL", myState.activeMeasurements)
+};
 
 
 
 // Make UI react to changes 
 myState.subscribe("onActiveRoomChanged", (activeRoom) => {
+    showSessionsAsCheckboxes(sessionsCheckboxContainer, myState, allSessions.filter(s => s.roomId == activeRoom._id))
+})
 
-    showSessionsAsCheckboxes(sessionsCheckboxContainer, allSessions.filter(s => s.roomId == activeRoom._id))
+myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
+    const activeSessionIds = activeSessions.map(s => s._id)
+    // console.log("CHANGED SELECTED SESSIONS ", activeSessions)
+    // console.log("Active session ids", activeSessionIds)
+    myState.activeMeasurements = allMeasurements.filter(m => activeSessionIds.includes(m.measurementSession))
+    // console.log("SETTING APPROPIATE MEASUREMENTS", myState.activeMeasurements)
 
 })
 
 myState.subscribe("onChangeState", (state) => {
     showStateInformationSection(state)
 })
-
-
 
 function showStateInformationSection(state) {
 
@@ -288,7 +169,7 @@ function showStateInformationSection(state) {
     const myStateSummary = JSUtils.replaceTemplatePlaceholders(myDivTemplate, {
         roomName: `${state.activeRoom.name}`,
         roomId: `${state.activeRoom._id}`,
-        measurements: sessionMeasurements.length
+        measurements: state.activeMeasurements.length
     })
 
 
@@ -305,32 +186,38 @@ function showStateInformationSection(state) {
 }
 
 
-function matchColorLevel(level) {
 
-    let color = "#FFFFFF"
-    switch (level) {
-        case 0: color = "#FF8282"
-            break;
-        case 1: color = "#FFC482"
-            break;
-        case 2: color = "#F0FF82"
-            break;
-        case 3: color = "#82FF8A"
-            break;
-        case 4: color = "#82CBFF"
-            break;
-    }
-    return color
+// -----------------------------------
+// MAPPING WITH LEAFLET AND HEATMAP.JS
+// -----------------------------------
 
+
+
+
+
+
+
+if (!myState.activeMeasurements)
+    document.querySelector("#map").append("No map to show")
+//HAndle case when origins are not defined???
+
+
+
+
+
+
+
+
+
+let visualizationCenter = {
+    lat: myState.activeSessions[0].worldPosition.lat,
+    lon: myState.activeSessions[0].worldPosition.lon
 }
 
 
-let origin = {
-    lat: chosenSession.worldPosition.lat,
-    lon: chosenSession.worldPosition.lon
-}
 
-console.log(origin)
+
+console.log(visualizationCenter)
 // console.warn("@alreylz - USING ANONYMIZED ORIGIN")
 // origin = { lat: 40.41523, lon: -3.70711 }
 
@@ -340,71 +227,106 @@ console.log(origin)
 
 
 // Init map
-const map = L.map('map').setView([origin.lat, origin.lon], 20);
+const map = L.map('map').setView([visualizationCenter.lat, visualizationCenter.lon], 20);
+let layerGroups = []
 const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 22,
+    maxZoom: 28,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-let layers = []
-
-
-console.log("MAP OBJECT", map)
 
 
 
 
-const inputLat = document.querySelector("input[name=latitude]")
-inputLat.value = origin.lat
-const inputLong = document.querySelector("input[name=longitude]")
-inputLong.value = origin.lon
-
-const inputRot = document.querySelector("input[name=rotation]")
-
-const form = document.querySelector(".viz-controls-form")
 
 
 
-//Gestión de rotar y ajustar origen
-form.addEventListener("submit", (ev) => {
-    console.log("Onsubmit ")
-
-    ev.preventDefault()
-    origin = {
-        lat: validateLat(parseFloat(inputLat.value)),
-        lon: validateLong(parseFloat(inputLong.value))
-    }
-
-    console.log("validated origin", origin)
-
-    clearMapLayers()
 
 
-    const angleConversion = parseFloat(inputRot.value)
-    const angle = Number.isNaN(angleConversion) ? 0 : angleConversion;
 
 
-    console.log("angle", angle)
 
 
-    //TODO: Get shape of what I need every time
-    let points = myState.activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
-
-    renderMap(origin, points, angle)
-
-
-})
+// let points = sessionMeasurements.map(measurement => {
+//    
+// })
 
 
-let points = sessionMeasurements.map(measurement => {
+const toMapPointsMapper = (measurement) => {
     return {
         _id: measurement._id,
         ...measurement.position,
         ...measurement.fullCellSignalStrength,
         ...measurement.fullCellIdentity,
         timestamp: measurement.timestamp,
+        sessionId: measurement.measurementSession
     }
+}
+
+if (myState.activeMeasurements && myState.activeSessions.length > 0)
+    renderMap(map, visualizationCenter, myState.activeSessions, myState.activeMeasurements.map(toMapPointsMapper))
+
+
+// Sucripción a cambios de measurements
+myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
+
+    //RESETEO LA POSICIÓN DEL CENTRO DE LA VISUALIZACIÓN (DEL MAPA)
+    visualizationCenter = getAverageLatLng(myState.activeSessions.map(s=>s.worldPosition));
+    console.log("VIS CENTER", visualizationCenter)
+    
+    console.log("ACTIVE MEASUREMENTS CHANGED", activeMeasurements)
+    //BUILDING WHAT THE MAP NEEDS
+    let points = activeMeasurements.map(toMapPointsMapper)
+    renderMap(map, visualizationCenter, myState.activeSessions, activeMeasurements.map(toMapPointsMapper))
+
 })
+
+
+
+
+
+
+const inputLat = document.querySelector("input[name=latitude]")
+// inputLat.value = startingVisualizationCenter.lat
+const inputLong = document.querySelector("input[name=longitude]")
+// inputLong.value = startingVisualizationCenter.lon
+const inputRot = document.querySelector("input[name=rotation]")
+const form = document.querySelector(".viz-controls-form")
+
+
+
+
+//Gestión de rotar y ajustar origen
+// form.addEventListener("submit", (ev) => {
+//     console.log("Onsubmit ")
+
+//     ev.preventDefault()
+//     origin = {
+//         lat: validateLat(parseFloat(inputLat.value)),
+//         lon: validateLong(parseFloat(inputLong.value))
+//     }
+
+//     console.log("validated origin", origin)
+
+//     clearMapLayers()
+
+
+//     const angleConversion = parseFloat(inputRot.value)
+//     const angle = Number.isNaN(angleConversion) ? 0 : angleConversion;
+
+
+//     console.log("angle", angle)
+
+
+//     //TODO: Get shape of what I need every time
+//     let points = myState.activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
+
+//     renderMap(map, origin, points, angle)
+
+
+// })
+
+
 
 // reference of map events : https://leafletjs.com/reference.html#map-click        
 map.on("dblclick", (e) => {
@@ -435,15 +357,6 @@ map.on("dblclick", (e) => {
 
 
 
-myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
-
-    console.log("ACTIVE MEASUREMENTS CHANGED", activeMeasurements)
-    let points = activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement, } })
-
-    renderMap(origin, points)
-})
-
-renderMap(origin, points)
 
 
 
@@ -452,14 +365,12 @@ renderMap(origin, points)
 
 
 
-
-
-
-
-function clearMapLayers() {
-    layers.forEach((l) => {
-        map.removeLayer(l)
+function clearMapLayers(map) {
+    layerGroups.forEach((l) => {
+        console.log("removing map layer for rerendering", l)
+        map.removeLayer( l.layer)
     })
+    layerGroups =[]
 }
 
 
@@ -470,32 +381,51 @@ function clearMapLayers() {
  * origin : lat, lon object
  * points: array of points with the data to paint
  * */
-function renderMap(origin, points, rotation = 0, whatToDisplay) {
+function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay) {
 
+    clearMapLayers(map) 
+
+    if(!points)
+        return
 
     whatToDisplay = whatToDisplay || 'level'
 
+    console.log("Rendering map 🗺️ with center at", visCenter)
 
-    console.log("Rendering map 🗺️", origin)
-    map.setView([origin.lat, origin.lon])
+    map.setView([visCenter.lat, visCenter.lon])
 
-    const layerGroupOrigin = L.layerGroup().addTo(map);
-
-    let myOriginPainted = L.marker(origin, {
-        color: 'orange',
+    
+    let visualizationCenter = L.circle(visCenter, {
+        color: 'red',
         fillOpacity: 0.5,
         radius: 0.5
-    }).bindPopup("This is the origin").addTo(layerGroupOrigin);
-    //add to list of layered info, so that re-rendering on change origin can move printed 
-    layers.push(layerGroupOrigin)
+    }).bindPopup("This is the visualization center").addTo(map)
+    layerGroups.push({ name:"visualizationCenter", layer:visualizationCenter})
 
+
+    const layerGroupOrigin = L.layerGroup().addTo(map);
+    sessions.forEach(s => {
+        //DISPLAY ORIGINS
+        let myOriginPainted = L.marker(s.worldPosition, {
+            color: 'orange',
+            fillOpacity: 0.5,
+            radius: 0.5
+        }).bindPopup(`This is the origin for session ${s._id}`).addTo(layerGroupOrigin);
+        //add to list of layered info, so that re-rendering on change origin can move printed 
+        layerGroupOrigin.addLayer(myOriginPainted)
+        
+    })
+    //add to layers for then removal
+    layerGroups.push({ name:"sessionCenters", layer:layerGroupOrigin})
 
     const layerGroupOther = L.layerGroup().addTo(map);
     //Print  saved from phone into database
     points.forEach(c => {
-        const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, origin.lat, origin.lon)
+        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition // Get actual lat long origin for this point
+
+        const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, ownOrigin.lat, ownOrigin.lon)
         const latLongCoords = rotation === undefined ?
-            localRoomCoordsAsLatLong : rotatePointMap(localRoomCoordsAsLatLong.lat, localRoomCoordsAsLatLong.lon, origin.lat, origin.lon, rotation)
+            localRoomCoordsAsLatLong : rotatePointMap(localRoomCoordsAsLatLong.lat, localRoomCoordsAsLatLong.lon, ownOrigin.lat, ownOrigin.lon, rotation)
 
 
         const popupDataForItem = `<div class="tooltip-point-detail">  
@@ -535,22 +465,24 @@ function renderMap(origin, points, rotation = 0, whatToDisplay) {
             })
 
 
-
+        //Represents a measuremtn
         let circle = L.circle(latLongCoords, {
             color: matchColorLevel(c.level || c.qualityLevel),
             fillOpacity: 0.5,
             radius: 0.05
         }).bindPopup(popupDataForItemReplaced).addTo(layerGroupOther);
+        //Adding to group
+        layerGroupOther.addLayer(circle)
     })
     //add to list of layered info, so that re-rendering on change origin can move printed 
-    layers.push(layerGroupOther)
-
-
-
-    // var layerControl = L.control.layers(layerGroupOther).addTo(map);
-
+    layerGroups.push({name:"actualPoints", layer: layerGroupOther})
     console.log("POINTS", points)
 
+
+
+
+    // I SHOULD DO HERE A COMPUTATION OF VALUES IN A GIVEN RADIUS
+    // TODO: HERE (origin is wrong)
 
     //Heatmap things
 
@@ -587,9 +519,10 @@ function renderMap(origin, points, rotation = 0, whatToDisplay) {
     };
 
     const heatmapLayer = new HeatmapOverlay(heatmapConfig);
-
-
     console.log(heatmapLayer)
+    layerGroups.push({name:"layer", layer:heatmapLayer})
+
+
 
 
     //Heatmap layer should be showing
@@ -607,5 +540,42 @@ function renderMap(origin, points, rotation = 0, whatToDisplay) {
         heatmapLayer.cfg.radius = pixelRadius;
         heatmapLayer._heatmap.configure({ radius: pixelRadius });
     });
-    console.log(map.layers)
+    // console.log(map.layers)
+}
+
+
+
+
+
+
+function matchColorLevel(level) {
+
+    let color = "#FFFFFF"
+    switch (level) {
+        case 0: color = "#FF8282"
+            break;
+        case 1: color = "#FFC482"
+            break;
+        case 2: color = "#F0FF82"
+            break;
+        case 3: color = "#82FF8A"
+            break;
+        case 4: color = "#82CBFF"
+            break;
+    }
+    return color
+
+}
+
+
+function getAverageLatLng(coords) {
+    let sumLat = 0, sumLng = 0;
+    const count = coords.length;
+
+    coords.forEach(coord => {
+        sumLat += coord.lat; // Latitude
+        sumLng += coord.lon; // Longitude
+    });
+
+    return {lat:sumLat / count, lon:sumLng / count}; // Returns the average lat/lng
 }

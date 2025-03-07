@@ -1,8 +1,6 @@
 :root {
-    --main-color: teal;
-    --bg-color: #3D3D3D;
-
-    
+    --main-color: rgb(97, 139, 173);
+    --bg-color: #3D3D3D;    
 }
 
 
@@ -283,9 +281,25 @@ option{
 }
 
 
+
+
+
+.sessions-displayed-list{
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+
+
 .timestamp.detail{
 
 }
+
+
+
+
 
 
 .two-cols{
