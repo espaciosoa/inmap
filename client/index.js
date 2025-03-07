@@ -227,17 +227,24 @@ console.log(visualizationCenter)
 
 
 // Init map
-const map = L.map('map').setView([visualizationCenter.lat, visualizationCenter.lon], 20);
+const map = L.map('map').setView([visualizationCenter.lat, visualizationCenter.lon], 19);
 let layerGroups = []
-const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 28,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+const tiles = L.tileLayer(
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+    maxZoom: 21,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
 
 
 
 
+map.on('zoomend', () => {
+    const currentZoom = map.getZoom(); // Get current zoom level
+    console.log('Current zoom level:', currentZoom);
+    //Zoom 21 is the perfect
+});
 
 
 
