@@ -5,7 +5,7 @@ import {
     from "./main.js"
 
 import { getNaturalLanguageDate } from "./converters.js"
-import { estimateValueIDW_LatLong } from "./interpolations.js"
+import { estimateValueIDW_LatLong, generatePointsInRadius } from "./interpolations.js"
 import { EventManager } from "./EventManager.js"
 import { mockHeatmapData } from "./Mock.js"
 
@@ -118,7 +118,9 @@ if (myState !== null) {
 
 // Make UI react to changes 
 myState.subscribe("onActiveRoomChanged", (activeRoom) => {
-    showSessionsAsCheckboxes(sessionsCheckboxContainer, myState, allSessions.filter(s => s.roomId == activeRoom._id))
+    showSessionsAsCheckboxes(sessionsCheckboxContainer, myState, allSessions.filter(s => s.roomId == activeRoom._id), allSessions.filter(s => s.roomId == activeRoom._id))
+    myState.activeSessions = allSessions.filter(s => s.roomId == activeRoom._id)
+
 })
 
 myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
@@ -217,7 +219,7 @@ let visualizationCenter = {
 
 
 
-console.log(visualizationCenter)
+console.log()
 // console.warn("@alreylz - USING ANONYMIZED ORIGIN")
 // origin = { lat: 40.41523, lon: -3.70711 }
 
@@ -232,12 +234,42 @@ let layerGroups = []
 const tiles = L.tileLayer(
     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
-    maxZoom: 21,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-}).addTo(map);
+        maxZoom: 21,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
 
 
 
+
+
+
+function toggleAllowInteraction(map, enabled) {
+
+
+
+    if (!enabled) {
+        console.log("DISABLING MAP CONTROLS")
+        map.dragging.disable();
+        map.touchZoom.disable();
+        map.doubleClickZoom.disable();
+        map.scrollWheelZoom.disable();
+        map.boxZoom.disable();
+        map.keyboard.disable();
+        if (map.tap) map.tap.disable();
+    }
+    else {
+        console.log("ENABLING MAP CONTROLS")
+        map.dragging.enabled();
+        map.touchZoom.enabled();
+        map.doubleClickZoom.enabled();
+        map.scrollWheelZoom.enabled();
+        map.boxZoom.enabled();
+        map.keyboard.enabled();
+        if (map.tap) map.tap.enabled();
+
+
+    }
+}
 
 
 map.on('zoomend', () => {
@@ -277,10 +309,15 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0)
 // Sucripción a cambios de measurements
 myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
+
+    // Disable interaction while map no measurements are chosen for display
+    toggleAllowInteraction(map, activeMeasurements.length === 0)
+
+    const defaultLatLon = { lat: 40.4233828, lon: -3.7121647 } //Plaza mayor
     //RESETEO LA POSICIÓN DEL CENTRO DE LA VISUALIZACIÓN (DEL MAPA)
-    visualizationCenter = getAverageLatLng(myState.activeSessions.map(s=>s.worldPosition));
-    console.log("VIS CENTER", visualizationCenter)
-    
+    visualizationCenter = myState.activeSessions.length > 0 ? getAverageLatLng(myState.activeSessions.map(s => s.worldPosition)) : defaultLatLon;
+    console.log("VIS CENTER",)
+
     console.log("ACTIVE MEASUREMENTS CHANGED", activeMeasurements)
     //BUILDING WHAT THE MAP NEEDS
     let points = activeMeasurements.map(toMapPointsMapper)
@@ -294,9 +331,9 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
 
 const inputLat = document.querySelector("input[name=latitude]")
-// inputLat.value = startingVisualizationCenter.lat
+// inputLat.value = starting.lat
 const inputLong = document.querySelector("input[name=longitude]")
-// inputLong.value = startingVisualizationCenter.lon
+// inputLong.value = starting.lon
 const inputRot = document.querySelector("input[name=rotation]")
 const form = document.querySelector(".viz-controls-form")
 
@@ -349,13 +386,14 @@ map.on("dblclick", (e) => {
     }
     console.log("📍 toEstimatePoint ", toEstimatePoint)
 
-    const knownDataPoints = points.map(p => {
+    const knownDataPoints = myState.activeMeasurements.map(p => {
         // console.log("p", p)
-        return { ...p.position, value: p.dbm, ...localToGeo(p.x, p.y, origin.lat, origin.lon) }
+
+        return { ...p.position, value: p.fullCellSignalStrength.dbm, ...localToGeo(p.position.x, p.position.z, visualizationCenter.lat, visualizationCenter.lon) }
     })
 
     console.log("📍📍📍 KnownDataPoints ", knownDataPoints)
-    const estimated = estimateValueIDW_LatLong(toEstimatePoint, knownDataPoints, 10);
+    const estimated = estimateValueIDW_LatLong(toEstimatePoint, knownDataPoints, 0.000009);
 
     console.log(`🆒 ESTIMATED DBM for unknown point at (${toEstimatePoint.lat}, ${toEstimatePoint.lon}) = ${estimated}`)
 
@@ -375,9 +413,9 @@ map.on("dblclick", (e) => {
 function clearMapLayers(map) {
     layerGroups.forEach((l) => {
         console.log("removing map layer for rerendering", l)
-        map.removeLayer( l.layer)
+        map.removeLayer(l.layer)
     })
-    layerGroups =[]
+    layerGroups = []
 }
 
 
@@ -390,9 +428,9 @@ function clearMapLayers(map) {
  * */
 function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay) {
 
-    clearMapLayers(map) 
+    clearMapLayers(map)
 
-    if(!points)
+    if (!points)
         return
 
     whatToDisplay = whatToDisplay || 'level'
@@ -401,13 +439,14 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
     map.setView([visCenter.lat, visCenter.lon])
 
-    
-    let visualizationCenter = L.circle(visCenter, {
+
+    let center = L.circle(visCenter, {
         color: 'red',
         fillOpacity: 0.5,
         radius: 0.5
-    }).bindPopup("This is the visualization center").addTo(map)
-    layerGroups.push({ name:"visualizationCenter", layer:visualizationCenter})
+    }).bindPopup(`This is the visualization center  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
+
+    layerGroups.push({ name: "", layer: center })
 
 
     const layerGroupOrigin = L.layerGroup().addTo(map);
@@ -418,12 +457,14 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             fillOpacity: 0.5,
             radius: 0.5
         }).bindPopup(`This is the origin for session ${s._id}`).addTo(layerGroupOrigin);
+
+
         //add to list of layered info, so that re-rendering on change origin can move printed 
         layerGroupOrigin.addLayer(myOriginPainted)
-        
+
     })
     //add to layers for then removal
-    layerGroups.push({ name:"sessionCenters", layer:layerGroupOrigin})
+    layerGroups.push({ name: "sessionCenters", layer: layerGroupOrigin })
 
     const layerGroupOther = L.layerGroup().addTo(map);
     //Print  saved from phone into database
@@ -482,8 +523,8 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
         layerGroupOther.addLayer(circle)
     })
     //add to list of layered info, so that re-rendering on change origin can move printed 
-    layerGroups.push({name:"actualPoints", layer: layerGroupOther})
-    console.log("POINTS", points)
+    layerGroups.push({ name: "actualPoints", layer: layerGroupOther })
+    console.log("POINTS (PRE HEATMAP)", points)
 
 
 
@@ -493,33 +534,78 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
     //Heatmap things
 
-    const heatmapData = points.map(c => {
+
+
+    const knownPointsHeatmapReady = points.map(c => {
+
+        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition // Get actual lat long origin for this point
+
+        const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, ownOrigin.lat, ownOrigin.lon)
         return {
-            ...localToGeo(c.x, c.z, origin.lat, origin.lon),
-            value: c.dbm
+            ...localRoomCoordsAsLatLong, value: c.dbm
+        }
+    })
+
+
+    // Generate many points in a radius that will be used for the point cloud
+    const pointCloudRadiusPoints = generatePointsInRadius(visCenter.lat, visCenter.lon, 0.0002, 1000)
+
+
+    console.log("POINT CLOUD RADIUS POINTS", pointCloudRadiusPoints)
+
+    // pointCloudRadiusPoints.forEach(p => {
+    //     // Debug point
+    //     console.log("showing circle as debug point")
+    //     L.circle(p, {
+    //         color: "pink",
+    //         fillOpacity: 0.5,
+    //         radius: 1
+    //     }).bindPopup("debug point").addTo(map)
+
+    // })
+
+    // toEstimatePoint, knownDataPoints, 0.000009);
+
+
+
+    const heatmapData = pointCloudRadiusPoints.map(c => {
+        return {
+            ...c,
+            value: estimateValueIDW_LatLong(c, knownPointsHeatmapReady, 0.0002)
         }
     }
     )
 
-    const testHMPoints = {
-        max: mockHeatmapData.reduce((max, obj) => obj.value > max ? obj.value : max, -Infinity),
-        min: mockHeatmapData.reduce((min, obj) => obj.value < min ? obj.value : min, Infinity),
-        data: mockHeatmapData //CHANGEME
 
+
+    const testHMPoints = {
+        max: heatmapData.reduce((max, obj) => obj.value > max ? obj.value : max, -Infinity),
+        min: heatmapData.reduce((min, obj) => obj.value < min ? obj.value : min, Infinity),
+        data: heatmapData
     };
 
-    console.log("HEATMAP-POINTS", testHMPoints)
+
+    console.log("HEATMAP-POINTS  🔥", testHMPoints)
     const heatmapConfig = {
-        radius: 2,
-        maxOpacity: 1,
+        radius: 10,
+        maxOpacity: 0.3,
         gradient: {
             // enter n keys between 0 and 1 here
             // for gradient color customization
-            '0': 'orange',
-            '0.99': 'blue'
+
+            '0': "#FF8282",
+            '0.25': "#FFC482",
+            '0.50': "#F0FF82",
+            '0.60': "#82FF8A",
+            '1': '#82CBFF'
+
+
+
+
+
         },
         // scaleRadius: true,
-        useLocalExtrema: true,
+        // useLocalExtrema: true,
         latField: "lat",
         lngField: "lon",
         valueField: "value"
@@ -527,9 +613,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
     const heatmapLayer = new HeatmapOverlay(heatmapConfig);
     console.log(heatmapLayer)
-    layerGroups.push({name:"layer", layer:heatmapLayer})
-
-
+    layerGroups.push({ name: "layer", layer: heatmapLayer })
 
 
     //Heatmap layer should be showing
@@ -543,7 +627,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
     // Update radius dynamically on zoom
     map.on("zoomend", function () {
         const center = map.getCenter();
-        const pixelRadius = metersToPixels(1, center.lat); // Example: 500 meters
+        const pixelRadius = metersToPixels(3, center.lat); // Example: 500 meters
         heatmapLayer.cfg.radius = pixelRadius;
         heatmapLayer._heatmap.configure({ radius: pixelRadius });
     });
@@ -584,5 +668,5 @@ function getAverageLatLng(coords) {
         sumLng += coord.lon; // Longitude
     });
 
-    return {lat:sumLat / count, lon:sumLng / count}; // Returns the average lat/lng
+    return { lat: sumLat / count, lon: sumLng / count }; // Returns the average lat/lng
 }

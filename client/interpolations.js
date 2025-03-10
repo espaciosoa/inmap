@@ -51,6 +51,9 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         ).filter(kdp => kdp.distance <= searchRadius)
 
 
+    console.log("NEARBY Data points",nearbyDataPoints )
+
+
     let weightedValueSummatory = 0;
     let weightsSummatory = 0;
 
@@ -136,3 +139,31 @@ export function getHaversineDistanceKM(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
 export function dotProduct(p1, p2) {
     return (p1.x * p2.x) + (p1.y * p2.y) + (p1.z * p2.z)
 }
+
+
+
+
+
+
+
+export function generatePointsInRadius(centerX, centerY, radius, numPoints) {
+    const points = [];
+  
+
+
+    for (let i = 0; i < numPoints; i++) {
+      // Generate a random angle (in radians)
+      const angle = Math.random() * 2 * Math.PI;
+      // Generate a random distance within the circle (square root ensures uniform distribution)
+      const distance = Math.sqrt(Math.random()) * radius;
+  
+      // Convert polar coordinates to Cartesian coordinates
+      const x = centerX + distance * Math.cos(angle);
+      const y = centerY + distance * Math.sin(angle);
+  
+    console.log(`CENTER IS ${centerX} ${centerY}`)
+      points.push({ lat:x, lon:y });
+    }
+  
+    return points;
+  }
