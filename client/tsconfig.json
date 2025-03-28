@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "strict": true,
+    "allowJs": true,
+    "checkJs": true,
+    "outDir": "./dist",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+  },
+  "include": [
+    "./**/*.ts"
+  ],
+  // "exclude": [
+  //   "../server",
+  //   "node_modules",
+  //   "**/*.json"
+  // ]
+}

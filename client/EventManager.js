@@ -12,6 +12,7 @@ export class EventManager {
      * @param event: Nombre del evento
      * @param callback: Función que se ejecutará cuando se emita el evento
      */
+    // @ts-ignore
     subscribe(event, callback) {
         if (!this.events.has(event)) {
             this.events.set(event, []);
@@ -24,6 +25,7 @@ export class EventManager {
      * @param event Nombre del evento
      * @param callback Función que se quiere eliminar de la lista de callbacks
      */
+    // @ts-ignore
     unsubscribe(event, callback) {
         if (this.events.has(event)) {
             const callbacks = this.events.get(event);
@@ -40,6 +42,7 @@ export class EventManager {
      * @param event Nombre del evento
      * @param args  Argumentos que se pasarán a los suscriptores del evento
      */
+    // @ts-ignore
     _dispatch(event, ...args) {
         if (this.events.has(event)) {
             for (const callback of this.events.get(event)) {

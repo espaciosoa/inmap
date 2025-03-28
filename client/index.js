@@ -10,9 +10,11 @@ import { EventManager } from "./EventManager.js"
 import { mockHeatmapData } from "./Mock.js"
 
 import JSUtils from "./Helpers.js"
-import { showRoomsAsSelectOptions, showSessionsAsCheckboxes } from "./DynamicHtml.js"
-// import h337 from './heatmap.js/heatmap.js'; // Ensure the path matches
-// import HeatmapOverlay from './heatmap.js/leaflet-heatmap/leaflet-heatmap.js';
+import { showRoomsAsSelectOptions, showSessionsAsCheckboxes, showNumericPropertiesAsSelect } from "./DynamicHtml.js"
+
+
+import { getPropertyUnit } from "./dist/crap.js"
+import {PageState} from "./dist/PageState.js"
 
 const allRooms = await getRooms();
 console.log("🏠 ROOMS ", allRooms)
@@ -26,76 +28,80 @@ console.log("📶 MEASUREMENTS ", allMeasurements)
 
 
 
-//MOVE ME TO A SEPARATE FILE WHEN THINGS WORK
-class PageState extends EventManager {
 
-    constructor(name = "",
-        defaultRoom,
-        defaultSessions
-    ) {
-        super();
+// //MOVE ME TO A SEPARATE FILE WHEN THINGS WORK
+// export class PageState extends EventManager {
 
-        this._activeRoom = defaultRoom ?? null;
-        this._activeSessions = defaultSessions ?? [];
-        this._activeMeasurements = [];
-        this._dispatch("onInit", (state) => console.log("init @state", state))
-        this.subscribe("onChangeState", (state) => console.log("@state", state))
+//     constructor(name = "",
+//         defaultRoom,
+//         defaultSessions
+//     ) {
+//         super();
 
-    }
+//         this._activeRoom = defaultRoom ?? null;
+//         this._activeSessions = defaultSessions ?? [];
+//         this._activeMeasurements = [];
+//         this._visualizingProperty;
+//         this._dispatch("onInit", (state) => console.log("init @state", state))
+//         this.subscribe("onChangeState", (state) => console.log("@state", state))
 
-
-    #overallStateChange() {
-        this._dispatch("onChangeState", this)
-    }
-
-    get activeRoom() { return this._activeRoom }
-    set activeRoom(room) {
-        this._activeRoom = room;
-        this._activeSessions = []
-        this._dispatch("onActiveRoomChanged", this._activeRoom);
-        this.#overallStateChange()
-    }
+//     }
 
 
+//     #overallStateChange() {
+//         this._dispatch("onChangeState", this)
+//     }
 
-    addSession(session) {
-        this._activeSessions.push(session)
-        this._dispatch("onActiveSessionsChanged", this._activeSessions)
-        this.#overallStateChange()
-    }
-    removeSession(session) {
-        this._activeSessions.pop(session)
-        this._dispatch("onActiveSessionsChanged", this._activeSessions)
-        this.#overallStateChange()
-
-    }
-
-
-    get activeSessions() { return this._activeSessions }
-
-    set activeSessions(sessions) {
-        this._activeSessions = sessions
-        this._dispatch("onActiveSessionsChanged", this._activeSessions)
-        this.#overallStateChange()
-    }
-
-    get activeMeasurements() { return this._activeMeasurements }
-    set activeMeasurements(measurements) {
-        this._activeMeasurements = measurements;
-        this._dispatch("onMeasurementsChanged", this._activeMeasurements);
-        this.#overallStateChange()
-
-    }
+//     get activeRoom() { return this._activeRoom }
+//     set activeRoom(room) {
+//         this._activeRoom = room;
+//         this._activeSessions = []
+//         this._dispatch("onActiveRoomChanged", this._activeRoom);
+//         this.#overallStateChange()
+//     }
 
 
-}
+
+//     addSession(session) {
+//         this._activeSessions.push(session)
+//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
+//         this.#overallStateChange()
+//     }
+//     removeSession(session) {
+//         this._activeSessions.pop(session)
+//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
+//         this.#overallStateChange()
+
+//     }
+
+
+//     get activeSessions() { return this._activeSessions }
+
+//     set activeSessions(sessions) {
+//         this._activeSessions = sessions
+//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
+//         this.#overallStateChange()
+//     }
+
+//     get activeMeasurements() { return this._activeMeasurements }
+//     set activeMeasurements(measurements) {
+//         this._activeMeasurements = measurements;
+//         this._dispatch("onMeasurementsChanged", this._activeMeasurements);
+//         this.#overallStateChange()
+
+//     }
+
+
+// }
+
 
 
 // Encapsulating state in an object
 const myState = new PageState(
     "visualization_state",
     /*default room */ allRooms[0],
-    /*default sessions */ allSessions.filter(s => s.roomId == allRooms[0]._id)
+    /*default sessions */ allSessions.filter(s => s.roomId == allRooms[0]._id),
+    /*visualizing property*/ null
 )
 
 
@@ -118,7 +124,10 @@ if (myState !== null) {
 
 // Make UI react to changes 
 myState.subscribe("onActiveRoomChanged", (activeRoom) => {
-    showSessionsAsCheckboxes(sessionsCheckboxContainer, myState, allSessions.filter(s => s.roomId == activeRoom._id), allSessions.filter(s => s.roomId == activeRoom._id))
+    showSessionsAsCheckboxes(sessionsCheckboxContainer,
+        myState,
+        allSessions.filter(s => s.roomId == activeRoom._id),
+        allSessions.filter(s => s.roomId == activeRoom._id))
     myState.activeSessions = allSessions.filter(s => s.roomId == activeRoom._id)
 
 })
@@ -135,6 +144,15 @@ myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
 myState.subscribe("onChangeState", (state) => {
     showStateInformationSection(state)
 })
+
+
+
+
+
+
+
+
+
 
 function showStateInformationSection(state) {
 
@@ -302,13 +320,39 @@ const toMapPointsMapper = (measurement) => {
     }
 }
 
-if (myState.activeMeasurements && myState.activeSessions.length > 0)
-    renderMap(map, visualizationCenter, myState.activeSessions, myState.activeMeasurements.map(toMapPointsMapper))
+if (myState.activeMeasurements && myState.activeSessions.length > 0){
+    myState.visualizingProperty = "dbm"
+    renderMap(
+        map,
+        visualizationCenter,
+        myState.activeSessions,
+        myState.activeMeasurements.map(toMapPointsMapper),
+        0,
+        myState.visualizingProperty
+    )
 
+    //This needs to be called when the map is initialized with data
+    showNumericPropertiesAsSelect(["dbm", "csiRsrp", "csiRsrq", "level"],
+        myState.visualizingProperty, (value )=>{
+            myState.visualizingProperty= value
 
+        }
+    )
+
+}
+
+   
 // Sucripción a cambios de measurements
 myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
+
+    //This needs to be called when the map is initialized with data
+    showNumericPropertiesAsSelect(["dbm", "csiRsrp", "csiRsrq", "level"],
+        myState.visualizingProperty, (value )=>{
+            myState.visualizingProperty= value
+
+        }
+    )
 
     // Disable interaction while map no measurements are chosen for display
     toggleAllowInteraction(map, activeMeasurements.length === 0)
@@ -325,6 +369,13 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
 })
 
+
+myState.subscribe("onVisualizedPropertyChanged",(property)=>{
+    renderMap(map, visualizationCenter, myState.activeSessions, myState.activeMeasurements.map(toMapPointsMapper), 0,
+    /* */
+    property
+    )
+})
 
 
 
@@ -388,7 +439,6 @@ map.on("dblclick", (e) => {
 
     const knownDataPoints = myState.activeMeasurements.map(p => {
         // console.log("p", p)
-
         return { ...p.position, value: p.fullCellSignalStrength.dbm, ...localToGeo(p.position.x, p.position.z, visualizationCenter.lat, visualizationCenter.lon) }
     })
 
@@ -426,27 +476,32 @@ function clearMapLayers(map) {
  * origin : lat, lon object
  * points: array of points with the data to paint
  * */
-function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay) {
+function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay= 'level') {
 
     clearMapLayers(map)
 
     if (!points)
         return
 
-    whatToDisplay = whatToDisplay || 'level'
+    // whatToDisplay = whatToDisplay ?? 'level'
 
     console.log("Rendering map 🗺️ with center at", visCenter)
 
     map.setView([visCenter.lat, visCenter.lon])
 
 
-    let center = L.circle(visCenter, {
-        color: 'red',
-        fillOpacity: 0.5,
-        radius: 0.5
-    }).bindPopup(`This is the visualization center  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
 
-    layerGroups.push({ name: "", layer: center })
+
+    //This is the estimated center 
+
+    let center = L.circle(visCenter, {
+        color: 'black',
+        fillOpacity: 1,
+        radius: 0.5
+    })
+        .bindPopup(`Estimated visualization center:  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
+
+    layerGroups.push({ name: "Estimated visualization center", layer: center })
 
 
     const layerGroupOrigin = L.layerGroup().addTo(map);
@@ -513,24 +568,29 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             })
 
 
-        //Represents a measuremtn
+
+        //depending on what to display
+        
+        // CHECK that the property to be show in the visualization is in the coe
+        if( !(whatToDisplay in c)){
+            throw new Error(`unknown data attribute specified ${whatToDisplay} `)
+        }
+        
+        //Represents a measurement
         let circle = L.circle(latLongCoords, {
-            color: matchColorLevel(c.level || c.qualityLevel),
+            color: 
+                matchColorLevel(c.level || c.qualityLevel),
             fillOpacity: 0.5,
             radius: 0.05
-        }).bindPopup(popupDataForItemReplaced).addTo(layerGroupOther);
+        })
+            .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}` )
+            .bindPopup(popupDataForItemReplaced).addTo(layerGroupOther);
         //Adding to group
         layerGroupOther.addLayer(circle)
     })
     //add to list of layered info, so that re-rendering on change origin can move printed 
     layerGroups.push({ name: "actualPoints", layer: layerGroupOther })
     console.log("POINTS (PRE HEATMAP)", points)
-
-
-
-
-    // I SHOULD DO HERE A COMPUTATION OF VALUES IN A GIVEN RADIUS
-    // TODO: HERE (origin is wrong)
 
     //Heatmap things
 
@@ -548,7 +608,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
     // Generate many points in a radius that will be used for the point cloud
-    const pointCloudRadiusPoints = generatePointsInRadius(visCenter.lat, visCenter.lon, 0.0002, 1000)
+    const pointCloudRadiusPoints = generatePointsInRadius(visCenter.lat, visCenter.lon, 0.0002, /* Changeme */ 1000)
 
 
     console.log("POINT CLOUD RADIUS POINTS", pointCloudRadiusPoints)

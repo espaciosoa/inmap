@@ -12,7 +12,7 @@ export function showRoomsAsSelectOptions(selectItem, state, rooms, selected = un
         data-id={{roomId}}>
             {{roomName}}
         </option>`
-     
+
     const allRoomsAsOptions = []
 
     rooms.forEach(r => {
@@ -26,7 +26,7 @@ export function showRoomsAsSelectOptions(selectItem, state, rooms, selected = un
         const optionNode = JSUtils.txtToHTMLNode(myOptionFilledTemplate)
 
         //set selected by default if any
-        console.log("SETTING SELECTED",  selected)
+        console.log("SETTING SELECTED", selected)
         if (selected && selected._id === r._id)
             optionNode.selected = true;
 
@@ -73,8 +73,8 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
 
         const checkboxDOM_Node = JSUtils.txtToHTMLNode(myCheckboxes)
 
-        console.log("ASSIGNING SELECTED CHECKBOXES", selected )
-        console.log("DATA", data )
+        console.log("ASSIGNING SELECTED CHECKBOXES", selected)
+        console.log("DATA", data)
         // Set checkboxes as selected
 
         // console.log("data._id  in selected.map(s=>s._id) ", data._id in selected.map(s => s._id))
@@ -95,7 +95,7 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
             console.log(checkbox.dataset)
             const toActivateThing = checkbox.dataset.type
             const toActivateId = checkbox.dataset.id
-         
+
             console.log(`${checkbox} ${toActivateThing} CHANGED isActive ? ${isActive} | id: ${toActivateId}  `)
 
 
@@ -112,4 +112,62 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
 
 
     parent.replaceChildren(...allSessionCheckboxes)
+}
+
+
+
+
+
+export function showNumericPropertiesAsSelect(properties, selected, onChangeSelected) {
+
+    //given the points to be printed, display all the possible keys that can be shown in the map
+
+    const measurementProperty_HtmlTemplate = `<option 
+    data-type="measurementProperty"    
+    value={{property}}
+    data-id={{property}}>
+        {{property}}
+    </option>`
+
+
+    const selectPadre = document.querySelector("#property-select-menu");
+
+
+    const childrenOptionsArray = []
+    //Genero las opciones con tantas propiedades numéricas como estén soportadas (se dan las opciones como parámetro)
+    properties.forEach((p) => {
+        const filledOptionTemplate = JSUtils.replaceTemplatePlaceholders(
+            measurementProperty_HtmlTemplate,
+            {
+                property: p,
+            });
+        const optionDOM_Node = JSUtils.txtToHTMLNode(filledOptionTemplate)
+
+        //Asignar selección actual
+        if (selected && selected === optionDOM_Node.value)
+            optionDOM_Node.selected = true;
+
+        childrenOptionsArray.push(optionDOM_Node)
+    })
+
+
+
+
+    selectPadre.addEventListener("change", (ev) => {
+        const value = ev.target.value
+        onChangeSelected(value)
+    })
+
+    selectPadre.replaceChildren(...childrenOptionsArray);
+
+    // Seleccionar el select padre y añadir un hijo por cada propiedad diferente de la lista
+
+    // const selectPropertyComponent_HTMLTemplate = 
+
+
+
+
+
+
+
 }

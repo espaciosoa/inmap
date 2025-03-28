@@ -70,11 +70,11 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
 
     let estimatedValue = weightedValueSummatory / weightsSummatory;
 
-    console.groupCollapsed("harvesineComputation ")
-    console.log("wValueSum =", weightedValueSummatory)
-    console.log("wSummatory =", weightsSummatory)
-    console.log("estimation = wValueSum/wSummatory =", estimatedValue)
-    console.groupEnd()
+    // console.groupCollapsed("harvesineComputation ")
+    // console.log("wValueSum =", weightedValueSummatory)
+    // console.log("wSummatory =", weightsSummatory)
+    // console.log("estimation = wValueSum/wSummatory =", estimatedValue)
+    // console.groupEnd()
 
     return estimatedValue
 
