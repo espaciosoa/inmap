@@ -95,9 +95,9 @@ main {
 
 
     @media screen and (max-width:480px) {
-        
+
         grid-template-columns: 1fr;
-        gap:3em;
+        gap: 3em;
     }
 
 }
@@ -331,14 +331,15 @@ option {
 
 /* Map "disabled" */
 
-#map{
+#map {
     position: relative;
 }
+
 .map-disabled-overlay {
     position: absolute;
     background-color: #3D3D3D;
     opacity: 0.5;
-    top:0;
+    top: 0;
     right: 0;
     left: 0;
     bottom: 0;
@@ -352,17 +353,15 @@ option {
 
 
 /* Overlay menu to control what is being displayed in the map */
-#map-menu-overlay{
-    position:absolute;
-    left:0;
-    top:50%;
+#map-menu-overlay {
+    position: absolute;
+    left: 0;
+    top: 50%;
     transform: translateY(-50%);
-    z-index:2000;
+    z-index: 2000;
 
 
     background-color: gray;
-    display:grid;
+    display: grid;
     grid-column: 40px;
 }
-
-

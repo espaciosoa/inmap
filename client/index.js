@@ -10,10 +10,10 @@ import { EventManager } from "./EventManager.js"
 import { mockHeatmapData } from "./Mock.js"
 
 import JSUtils from "./Helpers.js"
-import { showRoomsAsSelectOptions, showSessionsAsCheckboxes, showNumericPropertiesAsSelect } from "./DynamicHtml.js"
+import { showRoomsAsSelectOptions, showSessionsAsCheckboxes, showNumericPropertiesAsSelect} from "./DynamicHtml.js"
 
 
-import { getPropertyUnit } from "./dist/crap.js"
+import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue} from "./dist/crap.js"
 import {PageState} from "./dist/PageState.js"
 
 const allRooms = await getRooms();
@@ -332,7 +332,7 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0){
     )
 
     //This needs to be called when the map is initialized with data
-    showNumericPropertiesAsSelect(["dbm", "csiRsrp", "csiRsrq", "level"],
+    showNumericPropertiesAsSelect(getFilterablePropertiesList("4G"),
         myState.visualizingProperty, (value )=>{
             myState.visualizingProperty= value
 
@@ -342,8 +342,22 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0){
 }
 
    
+
+
+
+
+
+//NEED TO COMPUTE THE POSSIBLE numeric properties or have a constant of them
+
+
+
+
+
+
 // Sucripción a cambios de measurements
 myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
+
+
 
 
     //This needs to be called when the map is initialized with data
@@ -576,10 +590,13 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             throw new Error(`unknown data attribute specified ${whatToDisplay} `)
         }
         
+       
+
         //Represents a measurement
         let circle = L.circle(latLongCoords, {
             color: 
-                matchColorLevel(c.level || c.qualityLevel),
+            getPropertyColorForValue(whatToDisplay, c[whatToDisplay] ), 
+                // matchColorLevel(c.level || c.qualityLevel),
             fillOpacity: 0.5,
             radius: 0.05
         })
@@ -699,24 +716,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
 
-function matchColorLevel(level) {
 
-    let color = "#FFFFFF"
-    switch (level) {
-        case 0: color = "#FF8282"
-            break;
-        case 1: color = "#FFC482"
-            break;
-        case 2: color = "#F0FF82"
-            break;
-        case 3: color = "#82FF8A"
-            break;
-        case 4: color = "#82CBFF"
-            break;
-    }
-    return color
-
-}
 
 
 function getAverageLatLng(coords) {
