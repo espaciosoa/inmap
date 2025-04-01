@@ -1,30 +1,24 @@
 
 
 export function getNaturalLanguageDate(timestampString) {
-
-
-
+    const date = new Date(timestampString);
     try {
-        const formattedDate = new Intl.DateTimeFormat("es-SP", {
-            // weekday: "long",  // "Monday"
-            year: "numeric",  // "2025"
-            month: "long",    // "March"
-            day: "numeric",   // "3"
-            hour: "numeric",  // "9 AM"
-            minute: "numeric",
-            second: "numeric",
-            // timeZoneName: "short" // "UTC"
-        }).format(new Date(timestampString));
+        return new Intl.DateTimeFormat('es-ES', {
+            // weekday: 'long',  // lunes, martes, etc.
+            day: 'numeric',
+            month: 'long',  // enero, febrero, etc.
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            // timeZoneName: 'short' // Opcional: muestra la zona horaria
+        }).format(date);
 
-        return formattedDate;
 
-    }
-    catch (e) {
-
+    } catch (e) {
         console.error("ERROR WHEN CONVERTING TIME TO FORMATED DATE", e)
-
-    } finally {
-        return "?"
-    }
+        return "BAD DATE"
+    } 
+    
 
 }

@@ -7,7 +7,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 var cors = require('cors')
 const pathCerts = "/etc/letsencrypt/live/test.alreylz.me";
-
+const {shortRootRedirectsMiddleWare}= require("./routes/rest/middlewares/Middlewares.md.js")
 
 
 
@@ -59,16 +59,31 @@ const RoomMeasurementsAPIEndpoints = require("./routes/rest/RoomMeasurements.api
 app.use('/v1/API/RoomMeasurements', RoomMeasurementsAPIEndpoints)
 
 
+//Login & Logout with JWT
+const {AuthenticationEndpoints} = require("./routes/rest/Auth")
+app.use("/v1/API/",AuthenticationEndpoints)
+
 
 
 
 const SSR = require("./routes/ssr/Client.ssr")
 app.use('/', SSR)
 
+
 app.use(express.static('./'));
 
 app.use(express.static(__dirname + '/public'));
 app.use(express.static(__dirname + '/client'));
+
+
+app.use(shortRootRedirectsMiddleWare)
+
+//Handler of all the undefined endpoints
+app.use((req, res) => {
+  res.status(404).send('<h1>404 - Page Not Found</h1><p>The page you are looking for does not exist.</p>');
+});
+
+
 
 
 

@@ -51,7 +51,7 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         ).filter(kdp => kdp.distance <= searchRadius)
 
 
-    console.log("NEARBY Data points",nearbyDataPoints )
+    // console.log("NEARBY Data points",nearbyDataPoints )
 
 
     let weightedValueSummatory = 0;

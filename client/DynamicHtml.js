@@ -171,3 +171,17 @@ export function showNumericPropertiesAsSelect(properties, selected, onChangeSele
 
 
 }
+
+
+
+
+
+
+
+
+
+export function displayTableWithInformationOfAllSelectedStuff(){
+
+
+    throw new Error("Not Implemented yet displayTableWithInformationOfAllSelectedStuff")
+}
