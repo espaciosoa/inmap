@@ -1,4 +1,4 @@
-const {verifyAccessToken, refreshTokenPairFromRefreshToken, setAuthCookies, clearAuthCookies }=require("../Auth") 
+const {verifyAccessToken, refreshTokenPairFromRefreshToken, setAuthCookies, clearAuthCookies, isAuthenticated,hasValidRefreshToken }=require("../Auth") 
 
 
 
@@ -27,27 +27,7 @@ const authMiddleware = (req, res, next) => {
 
 
 
-function isAuthenticated(req) {
 
-    // console.log(req.cookies)
-    if (req.cookies == null)
-        return false 
-
-    const hasAccessToken = ("access-token" in req.cookies) 
-    const isValidToken = verifyAccessToken(req.cookies["access-token"], "access")
-    
-    return hasAccessToken && isValidToken
-}
-function hasValidRefreshToken(req){
-    // console.log(req.cookies)
-    if (req.cookies == null)
-        return false 
-
-    const hasRefreshToken = ("refresh-token" in req.cookies) 
-    const isValidToken = verifyAccessToken(req.cookies["refresh-token"], "refresh")
-    
-    return hasRefreshToken && isValidToken
-}
 
 
 //Client redirection depending on the middleware
@@ -86,53 +66,64 @@ const loginJWTAuthClientMiddleware = async (req,res,next) =>{
 }
 
 //Unautho
-const protectedAPIAuthMiddleWare = (req,res,next) =>{
+const protectedAPIAuthMiddleWare = async (req,res,next) =>{
 
 
     let authenticated = false
 
 
-    if(
-        !("access-token" in req.cookies) 
-        &&
-        !("refresh-token" in req.cookies)
-    ) {
+    // //CHECK AUTH VIA COOKIES
+    // if(
+    //     !("access-token" in req.cookies) 
+    //     &&
+    //     !("refresh-token" in req.cookies)
+    // ) {
 
-        console.log("No HTTP only cookies auth is present")
-        //If no login exists
-        return res.status(401).response({message:"No HTTP-only cookies present"}) 
-    }
-    else{
+    //     console.log("No HTTP only cookies auth is present")
+    //     //If no login exists
+    //     return res.status(401).response({message:"No HTTP-only cookies present"}) 
+    // }
+    // else{
 
-        console.log("Http only cookies for tokens are present. Verifying...")
-
-
-        console.log("ACCESS TOKEN", req.cookies["access-token"])
-        console.log("REFRESH TOKEN", req.cookies["refresh-token"])
+    //     console.log("Http only cookies for tokens are present. Verifying...")
 
 
+    //     console.log("ACCESS TOKEN", req.cookies["access-token"])
+    //     console.log("REFRESH TOKEN", req.cookies["refresh-token"])
 
-        if(verifyAccessToken(req.cookies["access-token"], "access-token"))
-            authenticated = true
-        else
-        next()
+    //     if(verifyAccessToken(req.cookies["access-token"], "access-token"))
+    //         authenticated = true
+    //     else
+    //     next()
 
-    }
+    // }
 
 
 
     //Authentication check using the authorization HTTP header instead of http only cookies
-    if(
-        !("Authorization" in req.headers) &&
-         !(req.headers["Authorization"].startsWith(`Bearer `))){
+    if(!("authorization" in req.headers)){
 
+        
+            console.log(req.headers)
             console.log("No Authorization header or valid one present")
-            return res.status(401).response({message:"No Authorization header or valid one present"}) 
+            return res.status(401).json({message:"No Authorization header or valid one present"}) 
 
         }
          else{
-            const onHeaderJWTtoken = authHeader && authHeader.split(' ')[1];
-            console.log("Authorization header present, found token", onHeaderJWTtoken)
+            
+            const authHeader = req.headers.authorization
+
+            if(!authHeader.startsWith(`Bearer `)){
+                return res.status(401).json({message:"Auth header has wrong format"}) 
+            }
+            
+        
+                console.log(" onHeadertoken",authHeader)
+
+                const onHeaderJWTtoken = authHeader.split(' ')[1];
+                console.log("Authorization header present, found token", onHeaderJWTtoken)
+                if(await verifyAccessToken(onHeaderJWTtoken, "access") ==null)
+                    return res.status(401).json({message:"Invalid token"}) 
 
          }
 

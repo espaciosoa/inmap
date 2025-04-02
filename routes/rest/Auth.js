@@ -27,6 +27,30 @@ async function verifyAccessToken(token, type){
 }
 
 
+function isAuthenticated(req) {
+
+    // console.log(req.cookies)
+    if (req.cookies == null)
+        return false 
+
+    const hasAccessToken = ("access-token" in req.cookies) 
+    const isValidToken = verifyAccessToken(req.cookies["access-token"], "access")
+    
+    return hasAccessToken && isValidToken
+}
+function hasValidRefreshToken(req){
+    // console.log(req.cookies)
+    if (req.cookies == null)
+        return false 
+
+    const hasRefreshToken = ("refresh-token" in req.cookies) 
+    const isValidToken = verifyAccessToken(req.cookies["refresh-token"], "refresh")
+    
+    return hasRefreshToken && isValidToken
+}
+
+
+
 // Given that there is a valid refresh token the request, regenerates and sets the cookies again
 function refreshTokenPairFromRefreshToken(req){
     
@@ -97,8 +121,22 @@ router.post("/logout", (req, res) => {
 });
 
 
+
+
+
+router.post("/refresh", (req,res)=>{
+    
+    const tokenPayload = hasValidRefreshToken(req)
+    const tokenPair = generateTokens(tokenPayload)
+
+    return res.status(200).json(tokenPair)
+    
+})
+
 module.exports = {
     AuthenticationEndpoints : router,
+    isAuthenticated,
+    hasValidRefreshToken,
     verifyAccessToken,
     generateTokens,
     refreshTokenPairFromRefreshToken,
