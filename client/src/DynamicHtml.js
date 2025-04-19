@@ -1,4 +1,5 @@
 import JSUtils from "./Helpers.js";
+import { getNaturalLanguageDate } from "/src/converters.js";
 //Given the rooms endpoint, shows all the possible rooms as select options
 /***
  * selectItem: where to place the options themselves (a HTMLSelectElement)
@@ -67,7 +68,7 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
     dataArray.forEach(data => {
         const myCheckboxes = JSUtils.replaceTemplatePlaceholders(option_HTML_Template,
             {
-                sessionDate: data.timestamp,
+                sessionDate: getNaturalLanguageDate(data.timestamp),
                 sessionId: data._id,
             });
 
@@ -174,14 +175,128 @@ export function showNumericPropertiesAsSelect(properties, selected, onChangeSele
 
 
 
+function isObject(item) {
+    return (item && typeof item === "object" && !Array.isArray(item));
+}
+
+
+
+
+function createTableFromObject(data) {
+    const elem = document.createElement("div");
+    elem.classList.add("sos");
+
+    const kvPairs = Object.entries(data);
+
+    for (const [key, value] of kvPairs) {
+        let kvItemHTML = document.createElement("div");
+
+
+        //UGLY HACK TO SHOW KEYPAIR VALUES AT DIFFERENT LEVELS
+        let valueAux = value;
+        try{
+            valueAux = JSON.parse(value)
+        }
+        catch(e){
+            console.log("attempted to convert to value")
+            valueAux = value;
+        }
+
+
+        if (isObject(valueAux)) {
+            const subElem = createTableFromObject(valueAux);
+            kvItemHTML.textContent = `${key}:`;
+            kvItemHTML.appendChild(subElem);
+        } else {
+            kvItemHTML.textContent = `${key} : ${valueAux}`;
+        }
+
+        elem.appendChild(kvItemHTML);
+    }
+
+    return elem;
+}
+
+
+
+function createTableFromArray(data) {
+    if (!Array.isArray(data) || data.length === 0) {
+        return document.createTextNode('No data to display.');
+    }
+
+    const tableWrapper = document.createElement("div")
+    tableWrapper.classList.add("table-container")
+    tableWrapper.classList.add("scrollable")
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    thead.classList.add("fixed-header")
+
+    const headerRow = document.createElement('tr');
+
+    // Create table headers from keys of first object
+    const keys = Object.keys(data[0]);
+    keys.forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = key;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table body
+    const tbody = document.createElement('tbody');
+    data.forEach(obj => {
+        const row = document.createElement('tr');
+        keys.forEach(key => {
+            const td = document.createElement('td');
+
+            // console.log(obj[key])
+            if (!isObject(obj[key]))
+                td.textContent = obj[key];
+            else
+                td.replaceChildren(createTableFromObject(obj[key]))
+
+
+            row.appendChild(td);
+        });
+        tbody.appendChild(row);
+    });
+
+
+    table.appendChild(tbody);
+    tableWrapper.appendChild(table)
+
+    return tableWrapper;
+}
 
 
 
 
 
 
-export function displayTableWithInformationOfAllSelectedStuff(){
+export function showMeasurementsAsTable(parent, measurements) {
+    parent.replaceChildren(createTableFromArray(measurements));
+}
+
+export function showRoomAsTable(parent, room) {
+    parent.replaceChildren(createTableFromArray([room]));
+}
+
+export function showSessionsAsTables(parent, sessions) {
+    parent.replaceChildren(createTableFromArray(sessions));
+
+}
 
 
-    throw new Error("Not Implemented yet displayTableWithInformationOfAllSelectedStuff")
+
+export function displayTableWithInformationOfAllSelectedStuff(parent, measurements) {
+
+    // Usage:
+    parent.replaceChildren(createTableFromArray(measurements));
+
+
+
+
+    // throw new Error("Not Implemented yet displayTableWithInformationOfAllSelectedStuff")
 }

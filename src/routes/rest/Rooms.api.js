@@ -7,7 +7,7 @@ const { Room, MeasurementSession, RoomMeasurement } = require("../../model/allMo
 const { authMiddleware, protectedAPIAuthMiddleWare} = require("./middlewares/Middlewares.md")
 
 // Define routes for all REST methods
-router.get('/',[protectedAPIAuthMiddleWare ], async (req, res) => {
+router.get('/',/*[protectedAPIAuthMiddleWare ],*/ async (req, res) => {
   const allRooms = await Room.find({}).exec()
   res.json(allRooms)
 

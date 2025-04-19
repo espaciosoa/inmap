@@ -145,25 +145,45 @@ export function dotProduct(p1, p2) {
 
 
 
+export function getLatLongBoundingBox(points) {
+    const latitudes = points.map(point => point.lat);
+    const longitudes = points.map(point => point.lon);
+
+    const minLat = Math.min(...latitudes);
+    const maxLat = Math.max(...latitudes);
+    const minLon = Math.min(...longitudes);
+    const maxLon = Math.max(...longitudes);
+
+    return {
+        minLat: minLat,
+        maxLat: maxLat,
+        minLon: minLon,
+        maxLon: maxLon
+    };
+}
+
+
+
+
 
 export function generatePointsInRadius(centerX, centerY, radius, numPoints) {
     const points = [];
-  
+
 
 
     for (let i = 0; i < numPoints; i++) {
-      // Generate a random angle (in radians)
-      const angle = Math.random() * 2 * Math.PI;
-      // Generate a random distance within the circle (square root ensures uniform distribution)
-      const distance = Math.sqrt(Math.random()) * radius;
-  
-      // Convert polar coordinates to Cartesian coordinates
-      const x = centerX + distance * Math.cos(angle);
-      const y = centerY + distance * Math.sin(angle);
-  
-    console.log(`CENTER IS ${centerX} ${centerY}`)
-      points.push({ lat:x, lon:y });
+        // Generate a random angle (in radians)
+        const angle = Math.random() * 2 * Math.PI;
+        // Generate a random distance within the circle (square root ensures uniform distribution)
+        const distance = Math.sqrt(Math.random()) * radius;
+
+        // Convert polar coordinates to Cartesian coordinates
+        const x = centerX + distance * Math.cos(angle);
+        const y = centerY + distance * Math.sin(angle);
+
+        console.log(`CENTER IS ${centerX} ${centerY}`)
+        points.push({ lat: x, lon: y });
     }
-  
+
     return points;
-  }
+}

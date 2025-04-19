@@ -1,12 +1,7 @@
 console.log("Code from typescript")
 
 
-
-
-
-
 // Function to interpolate between colors to display numeric things in the map
-
 
 type HexColor = `#${string}`
 

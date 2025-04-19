@@ -16,6 +16,7 @@
 
 
     <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./tables.module.css" />
 
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,18 +25,18 @@
 
 
     <!-- I should probably pack stuff to be able to use npm packages more comfortably -->
-    <script src="/heatmap.js/heatmap.js"></script>
-    <script defer src="/heatmap.js/leaflet-heatmap/leaflet-heatmap.js"></script>
-    <script src="/client/index.js" type="module"></script>
+    <script src="/lib/heatmap.js/heatmap.js"></script>
+    <script defer src="/lib/heatmap.js/leaflet-heatmap/leaflet-heatmap.js"></script>
+    <script src="/client/client.index.js" type="module"></script>
 </head>
 
 <body>
     <header class="header">
         <div>
-            <img src="/assets/favicon.png">
+            <img src="favicon.png">
             <h1>Mapping client for 5G AR app </h1>
         </div>
-        <form action="/v1/API/logout" method="POST"> <button type="submit"> Logout</button></form>
+        <form action="/logout" method="POST"> <button type="submit" class="logout-button"> Logout</button></form>
     </header>
     <main>
 
@@ -66,19 +67,12 @@
         </div>
 
         <section class="grid-form-map">
-            <form class="viz-controls-form">
-                Adjust Plot Origin
-                <input name="latitude" type="text" placeholder="latitude [-90, 90]" required />
-                <input name="longitude" type="text" placeholder="longitude [-180, 180]" required />
-                <input name="rotation" type="text" placeholder="rotation (optional)" />
-                <button type="submit" class="button interactable"> Reset</button>
-            </form>
 
             <div id="map">
                 <!-- <div class="map-disabled-overlay"></div> -->
 
                 <aside id="map-menu-overlay">
-                    Menu:
+                    <h4>Property Visualized</h4>
                     <select id="property-select-menu">
                         <option> "Default"</option>
 
@@ -88,7 +82,13 @@
             </div>
         </section>
 
-
+        <!-- <form class="viz-controls-form">
+            Adjust Plot Origin
+            <input name="latitude" type="text" placeholder="latitude [-90, 90]" required />
+            <input name="longitude" type="text" placeholder="longitude [-180, 180]" required />
+            <input name="rotation" type="text" placeholder="rotation (optional)" />
+            <button type="submit" class="button interactable"> Reset</button>
+        </form> -->
 
 
 
@@ -96,14 +96,29 @@
 
 
         <section>
-            Maybe i could add a table showing the measurements and some simple plots
-            <table>
+            <h2>Room</h2>
+            <div class="tables room">
+                Room as table here
+            </div>
+        </section>
 
-            </table>
+        <section>
+            <h2>Sessions</h2>
+            <div class="tables sessions">
+                Sessions as table here
+            </div>
+        </section>
+        <section>
+            <h2>Measurements</h2>
+            <div class="tables measurements">
+                Measurements as table here
+            </div>
+
 
         </section>
-    </main>
 
+
+    </main>
 
     <footer class="footer">
         <a href="https://espaciosoa.com/">&#169; EspacioSOA</a>
@@ -111,11 +126,6 @@
         <pre>Developed by <a href="https://alejandro-rey.me" >@alreylz</a></pre>
     </footer>
 
-
-
-
-
-
-    < </body>
+</body>
 
 </html>

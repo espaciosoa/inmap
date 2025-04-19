@@ -14,14 +14,14 @@ fs.readdirSync(__dirname)
 
     const modelName = file.split(".")[0]; // Get model name from filename
     const modelFile = path.join(__dirname, file)
-    console.log(`model File ${modelFile}`)
+    console.log(`\t✅ DB model File ${modelFile}`)
     const {Schema} = require(modelFile); // Import schema
     
     models[modelName] = mongoose.model(modelName, Schema); // Register model (DAO)
-    console.log(models[modelName].schema.paths)
+    // console.log(models[modelName].schema.paths)
 });
 
-console.log(mongoose.modelNames())
+console.log("Loaded the following MONGOOSE Models", mongoose.modelNames())
 
   
 module.exports = models; // Export all models

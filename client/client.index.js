@@ -1,20 +1,37 @@
+// Main file for the client side
 import {
     localToGeo, validateLat, validateLong, isNumber, rotatePointMap,
-    getMeasurements, getSessions, getRooms
+    getAverageLatLng
 }
-    from "./main.js"
+    from "./src/geo.utils.js"
 
-import { getNaturalLanguageDate } from "./converters.js"
-import { estimateValueIDW_LatLong, generatePointsInRadius } from "./interpolations.js"
-import { EventManager } from "./EventManager.js"
-import { mockHeatmapData } from "./Mock.js"
-
-import JSUtils from "./Helpers.js"
-import { showRoomsAsSelectOptions, showSessionsAsCheckboxes, showNumericPropertiesAsSelect} from "./DynamicHtml.js"
+import { LEAFLET_POPUP_HTML_TEMPLATE } from "./src/leaflet.templates.js"
 
 
-import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue} from "./dist/crap.js"
-import {PageState} from "./dist/PageState.js"
+import { getRooms, getSessions, getMeasurements } from "/src/requests.js"
+import { requestIAAPI } from "./src/requests.ia.js"
+import { loadBase64Image } from "./src/image.utils.js"
+
+
+import { getNaturalLanguageDate } from "./src/converters.js"
+import { estimateValueIDW_LatLong, generatePointsInRadius } from "./src/interpolations.js"
+
+
+import JSUtils from "./src/Helpers.js"
+import {
+    showRoomsAsSelectOptions, showSessionsAsCheckboxes, showNumericPropertiesAsSelect,
+    showMeasurementsAsTable, showRoomAsTable, showSessionsAsTables
+
+
+} from "./src/DynamicHtml.js"
+
+
+import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "./dist/crap.js"
+import { PageState } from "./dist/PageState.js"
+
+
+
+console.groupCollapsed("API Rest Data: 📱📏📶📱📏📶📱📏📶")
 
 const allRooms = await getRooms();
 console.log("🏠 ROOMS ", allRooms)
@@ -25,74 +42,9 @@ console.log("📱📏 SESSIONS ", allSessions)
 const allMeasurements = await getMeasurements();
 console.log("📶 MEASUREMENTS ", allMeasurements)
 
+console.groupEnd()
 
 
-
-
-// //MOVE ME TO A SEPARATE FILE WHEN THINGS WORK
-// export class PageState extends EventManager {
-
-//     constructor(name = "",
-//         defaultRoom,
-//         defaultSessions
-//     ) {
-//         super();
-
-//         this._activeRoom = defaultRoom ?? null;
-//         this._activeSessions = defaultSessions ?? [];
-//         this._activeMeasurements = [];
-//         this._visualizingProperty;
-//         this._dispatch("onInit", (state) => console.log("init @state", state))
-//         this.subscribe("onChangeState", (state) => console.log("@state", state))
-
-//     }
-
-
-//     #overallStateChange() {
-//         this._dispatch("onChangeState", this)
-//     }
-
-//     get activeRoom() { return this._activeRoom }
-//     set activeRoom(room) {
-//         this._activeRoom = room;
-//         this._activeSessions = []
-//         this._dispatch("onActiveRoomChanged", this._activeRoom);
-//         this.#overallStateChange()
-//     }
-
-
-
-//     addSession(session) {
-//         this._activeSessions.push(session)
-//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
-//         this.#overallStateChange()
-//     }
-//     removeSession(session) {
-//         this._activeSessions.pop(session)
-//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
-//         this.#overallStateChange()
-
-//     }
-
-
-//     get activeSessions() { return this._activeSessions }
-
-//     set activeSessions(sessions) {
-//         this._activeSessions = sessions
-//         this._dispatch("onActiveSessionsChanged", this._activeSessions)
-//         this.#overallStateChange()
-//     }
-
-//     get activeMeasurements() { return this._activeMeasurements }
-//     set activeMeasurements(measurements) {
-//         this._activeMeasurements = measurements;
-//         this._dispatch("onMeasurementsChanged", this._activeMeasurements);
-//         this.#overallStateChange()
-
-//     }
-
-
-// }
 
 
 
@@ -144,14 +96,6 @@ myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
 myState.subscribe("onChangeState", (state) => {
     showStateInformationSection(state)
 })
-
-
-
-
-
-
-
-
 
 
 function showStateInformationSection(state) {
@@ -320,7 +264,7 @@ const toMapPointsMapper = (measurement) => {
     }
 }
 
-if (myState.activeMeasurements && myState.activeSessions.length > 0){
+if (myState.activeMeasurements && myState.activeSessions.length > 0) {
     myState.visualizingProperty = "dbm"
     renderMap(
         map,
@@ -333,15 +277,15 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0){
 
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(getFilterablePropertiesList("4G"),
-        myState.visualizingProperty, (value )=>{
-            myState.visualizingProperty= value
+        myState.visualizingProperty, (value) => {
+            myState.visualizingProperty = value
 
         }
     )
 
 }
 
-   
+
 
 
 
@@ -362,8 +306,8 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(["dbm", "csiRsrp", "csiRsrq", "level"],
-        myState.visualizingProperty, (value )=>{
-            myState.visualizingProperty= value
+        myState.visualizingProperty, (value) => {
+            myState.visualizingProperty = value
 
         }
     )
@@ -384,10 +328,10 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 })
 
 
-myState.subscribe("onVisualizedPropertyChanged",(property)=>{
+myState.subscribe("onVisualizedPropertyChanged", (property) => {
     renderMap(map, visualizationCenter, myState.activeSessions, myState.activeMeasurements.map(toMapPointsMapper), 0,
-    /* */
-    property
+        /* */
+        property
     )
 })
 
@@ -437,23 +381,27 @@ const form = document.querySelector(".viz-controls-form")
 
 
 
-// reference of map events : https://leafletjs.com/reference.html#map-click        
-map.on("dblclick", (e) => {
+// reference of map events : https://leafletjs.com/reference.html#map-click     
 
+
+//TODO estimate values for different values being visualized
+map.on("dblclick", (e) => {
 
     console.groupCollapsed("Point Estimation Tests : on Map DBL click (📍❓)")
 
-    console.log("Data for click event", e)
+    // console.log("Data for click event", e)
 
     const toEstimatePoint = {
         lat: e.latlng.lat,
         lon: e.latlng.lng
     }
+
     console.log("📍 toEstimatePoint ", toEstimatePoint)
+
 
     const knownDataPoints = myState.activeMeasurements.map(p => {
         // console.log("p", p)
-        return { ...p.position, value: p.fullCellSignalStrength.dbm, ...localToGeo(p.position.x, p.position.z, visualizationCenter.lat, visualizationCenter.lon) }
+        return { ...p.position, value: p.fullCellSignalStrength[myState.visualizingProperty] /*should be dbm by default*/, ...localToGeo(p.position.x, p.position.z, visualizationCenter.lat, visualizationCenter.lon) }
     })
 
     console.log("📍📍📍 KnownDataPoints ", knownDataPoints)
@@ -461,17 +409,26 @@ map.on("dblclick", (e) => {
 
     console.log(`🆒 ESTIMATED DBM for unknown point at (${toEstimatePoint.lat}, ${toEstimatePoint.lon}) = ${estimated}`)
 
+
+    const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
+    const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
+        {
+            title: "Estimated point",
+            dbm: estimated,
+        })
+
+    //Create a circle to show the estimated point visually
+    const estimatedPoint = L.circle(toEstimatePoint, {
+        color:"#32cd9f",
+        fillOpacity: 0.5,
+        radius: 0.05,
+        className: "estimated-point"
+    })
+        .bindTooltip(`${myState.visualizingProperty} :  ${myState.visualizingProperty} ${getPropertyUnit(myState.visualizingProperty)}`)
+        .bindPopup(popupDataForItemReplaced).addTo(map).openPopup()
+
     console.groupEnd()
 })
-
-
-
-
-
-
-
-
-
 
 
 function clearMapLayers(map) {
@@ -490,7 +447,7 @@ function clearMapLayers(map) {
  * origin : lat, lon object
  * points: array of points with the data to paint
  * */
-function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay= 'level') {
+function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay = 'level') {
 
     clearMapLayers(map)
 
@@ -527,7 +484,6 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             radius: 0.5
         }).bindPopup(`This is the origin for session ${s._id}`).addTo(layerGroupOrigin);
 
-
         //add to list of layered info, so that re-rendering on change origin can move printed 
         layerGroupOrigin.addLayer(myOriginPainted)
 
@@ -545,31 +501,11 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             localRoomCoordsAsLatLong : rotatePointMap(localRoomCoordsAsLatLong.lat, localRoomCoordsAsLatLong.lon, ownOrigin.lat, ownOrigin.lon, rotation)
 
 
-        const popupDataForItem = `<div class="tooltip-point-detail">  
-                <header > 
-                    <h4>Data point detail :</h4>
-                </header>
-                <div class="two-cols center"> 
-                    <div class="signal-data"> 
-                            <span> <span class="bold">dbm</span>: {{dbm}} </span>
-                            <span> <span class="bold">asuLevel</span>: {{asuLevel}} </span>
-                            <span> <span class="bold">qualityLevel</span>: {{level}}</span>
-                            <span> <span class="bold">signalType</span>: {{type}} </span>
-                            <!-- Now the optionals -->    
-                            <span> {{restSignalData}}</span>
-                    </div>
-                    <div class="cell-identity">
-                        <span> <span class="bold">Operator</span>: {{operator}} </span>
-                        <span> <span class="bold">Bandwidth</span>: {{bandwidth}} </span>
-                    </div> 
-                </div>
-                <footer>
-                    <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
-                </footer>
-                </div>`
+        const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
 
         const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
             {
+                title: `Measurement ${c._id}`,
                 timestamp: getNaturalLanguageDate(c.timestamp),
                 dbm: c.dbm,
                 asuLevel: c.asuLevel,
@@ -578,30 +514,30 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
                 // restSignalData : `cqi:${c.cqi}, rsrp:${c.rsrp}, rssi:${c.rssi}`,
                 operator: c.operatorAlphaLong,
                 bandwidth: c.bandwidth
-
             })
 
 
 
         //depending on what to display
-        
+
         // CHECK that the property to be show in the visualization is in the coe
-        if( !(whatToDisplay in c)){
+        if (!(whatToDisplay in c)) {
             throw new Error(`unknown data attribute specified ${whatToDisplay} `)
         }
-        
-       
+
+
 
         //Represents a measurement
         let circle = L.circle(latLongCoords, {
-            color: 
-            getPropertyColorForValue(whatToDisplay, c[whatToDisplay] ), 
-                // matchColorLevel(c.level || c.qualityLevel),
+            color:
+                getPropertyColorForValue(whatToDisplay, c[whatToDisplay]),
+            // matchColorLevel(c.level || c.qualityLevel),
             fillOpacity: 0.5,
             radius: 0.05
         })
-            .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}` )
+            .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}`)
             .bindPopup(popupDataForItemReplaced).addTo(layerGroupOther);
+
         //Adding to group
         layerGroupOther.addLayer(circle)
     })
@@ -610,8 +546,6 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
     console.log("POINTS (PRE HEATMAP)", points)
 
     //Heatmap things
-
-
 
     const knownPointsHeatmapReady = points.map(c => {
 
@@ -701,6 +635,8 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
         const zoom = map.getZoom();
         return meters / (156543.03392 * Math.cos((lat * Math.PI) / 180) / Math.pow(2, zoom));
     }
+
+
     // Update radius dynamically on zoom
     map.on("zoomend", function () {
         const center = map.getCenter();
@@ -719,14 +655,37 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
 
-function getAverageLatLng(coords) {
-    let sumLat = 0, sumLng = 0;
-    const count = coords.length;
 
-    coords.forEach(coord => {
-        sumLat += coord.lat; // Latitude
-        sumLng += coord.lon; // Longitude
-    });
 
-    return { lat: sumLat / count, lon: sumLng / count }; // Returns the average lat/lng
+
+
+
+
+
+
+
+// @todo : HERE I WAS DOING TESTS WITH THE IA API
+try {
+    var imgData = await requestIAAPI()
+    console.log("IMG DATA", imgData)
+    var myImg = loadBase64Image(imgData.base64)
+
+    var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg',
+        imageBounds = [[40.4233828, -3.7121647], [40.4233828 + 1, -3.7121647 + 1]];
+    L.imageOverlay(myImg, imageBounds).addTo(map);
+
 }
+catch (e) {
+    console.warn("Error loading image (maybe IA endpoint is not active)", e)
+}
+
+
+// Table showing all measurements
+
+const SESSIONS_DIV = document.querySelector(".tables.sessions")
+const MEASUREMENTS_DIV = document.querySelector(".tables.measurements")
+const ROOM_DIV = document.querySelector(".tables.room")
+
+showRoomAsTable(ROOM_DIV, myState.activeRoom)
+showSessionsAsTables(SESSIONS_DIV, myState.activeSessions)
+showMeasurementsAsTable(MEASUREMENTS_DIV, myState.activeMeasurements)

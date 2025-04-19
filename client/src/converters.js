@@ -1,5 +1,3 @@
-
-
 export function getNaturalLanguageDate(timestampString) {
     const date = new Date(timestampString);
     try {

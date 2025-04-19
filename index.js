@@ -1,13 +1,46 @@
 const https = require('https');
 const fs = require('fs');
-require("dotenv").config()
 
 const readline = require("readline")
 const express = require('express');
 const cookieParser = require('cookie-parser');
-var cors = require('cors')
-const pathCerts = "/etc/letsencrypt/live/test.alreylz.me";
-const {shortRootRedirectsMiddleWare}= require("./routes/rest/middlewares/Middlewares.md.js")
+const cors = require('cors')
+const path = require('path');
+
+
+// Read global .env
+require("dotenv").config()
+const runninEnvironment = process.env.NODE_ENV ? process.env.NODE_ENV : "development"
+// Check development environment and if not set, default to development
+require('dotenv').config({ path: `.env.${runninEnvironment}`, override: true });
+
+// console.log(`RUNNING IN '${process.env.NODE_ENV}' environment mode`)
+
+const interestingENVVars = Object.fromEntries(Object.entries(process.env).filter((keyValPair) => {
+
+  //Filtering only the ones I want to ehck the value for
+  const key = keyValPair[0]
+  const val = keyValPair[1]
+
+  return [
+    "NODE_ENV",
+    "HOST",
+    "PORT",
+    "MONGO_PORT",
+    "PATH_CERTS",
+    "USERNAME",
+    "PASSWORD"].includes(key)
+
+}))
+
+
+console.log(`🗿 Loaded Environment vars :\n'${runninEnvironment}' mode`, interestingENVVars)
+
+
+//Where to take the ssl encription certs and private key from
+const pathCerts = process.env.PATH_CERTS  //"/etc/letsencrypt/live/test.alreylz.me";
+const { shortRootRedirectsMiddleWare } = require("./src/routes/rest/middlewares/Middlewares.md.js")
+
 
 
 
@@ -19,7 +52,11 @@ const sslOptions = {
 };
 
 const app = express();
-app.use(cors())
+app.use(cors({
+  origin: "*"
+  // origin: 'https://localhost:8442',
+
+}))
 
 
 const ObjectId = require('mongoose').Types.ObjectId;
@@ -27,7 +64,7 @@ const ObjectId = require('mongoose').Types.ObjectId;
 
 
 const dbConnection = require('./db')(process.env.HOST, process.env.MONGO_PORT, process.env.MONGO_DB_NAME);
-const { Room, RoomMeasurement, MeasurementSession } = require("./model/allModels")
+const { Room, RoomMeasurement, MeasurementSession } = require("./src/model/allModels.js")
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -37,36 +74,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 // Create the HTTPS server
 https.createServer(sslOptions, app).listen(process.env.PORT, () => {
-  console.log(`HTTPS server is running at https://${process.env.HOST}:${process.env.PORT}`);
-  console.log(`MongoDB instance running at https://${process.env.HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DB_NAME}`)
-
-  // removeAll()
+  console.log(`--------------------------------------------------------------------------`)
+  console.log(`🌐 HTTPS server is running at https://${process.env.HOST}:${process.env.PORT}`);
+  console.log(`💾 MongoDB instance running at https://${process.env.HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DB_NAME}\n --------------------------------------------------------------------------`)
 });
 
 
 
-const APIRoot = require("./routes/rest/index.api")
+const APIRoot = require("./src/routes/rest/index.api")
 app.use('/v1/API/', APIRoot)
 
 
-const RoomAPIEndpoints = require("./routes/rest/Rooms.api")
+const RoomAPIEndpoints = require("./src/routes/rest/Rooms.api")
 app.use('/v1/API/Rooms', RoomAPIEndpoints)
 
-const MeasurementSessionAPIEndpoints = require("./routes/rest/MeasurementSessions.api")
+const MeasurementSessionAPIEndpoints = require("./src/routes/rest/MeasurementSessions.api")
 app.use('/v1/API/MeasurementSessions', MeasurementSessionAPIEndpoints)
 
-const RoomMeasurementsAPIEndpoints = require("./routes/rest/RoomMeasurements.api")
+const RoomMeasurementsAPIEndpoints = require("./src/routes/rest/RoomMeasurements.api")
 app.use('/v1/API/RoomMeasurements', RoomMeasurementsAPIEndpoints)
 
 
 //Login & Logout with JWT
-const {AuthenticationEndpoints} = require("./routes/rest/Auth")
-app.use("/v1/API/",AuthenticationEndpoints)
+const { AuthenticationEndpoints } = require("./src/routes/rest/Auth")
+app.use("/v1/API/", AuthenticationEndpoints)
 
 
 
-
-const SSR = require("./routes/ssr/Client.ssr")
+// Set view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'client/'));
+const SSR = require("./src/routes/ssr/Client.ssr")
 app.use('/', SSR)
 
 
@@ -85,18 +123,6 @@ app.use((req, res) => {
 
 
 
-
-
-
-// removeAll()
-
-
-// removeRoom("3eab0ddf-6d81-496b-a123-5f3c7560bcd3")
-
-
-
-
-// removeRoomByNameCascade("uniTest")
 
 async function removeRoomByNameCascade(name) {
   const room = await Room.findOne({ name: name })
@@ -149,7 +175,7 @@ async function removeAll() {
 
 
 (async () => {
-   await listUselessData(false)
+  await listUselessData(false)
   // const cleanup = await askQuestion("Delete?") ?? "n"
   // if (cleanup.toLowerCase() === "y") {
   //   await listUselessData(true)
@@ -200,7 +226,7 @@ async function listUselessData(performDelete = false) {
     }
 
 
-}
+  }
 
 
 
@@ -224,3 +250,8 @@ function askQuestion(question) {
     });
   });
 }
+
+
+
+
+

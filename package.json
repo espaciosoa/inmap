@@ -1,21 +1,27 @@
 {
-  "name": "5ginteriores",
+  "name": "5g-interiores",
   "version": "1.0.0",
   "private": "true",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "dev": "npx nodemon index.js",
-    "client-dev": "npx tsc -p ./client/ --watch",
-    "dev:debug": "npx nodemon --inspect index.js"
+    "start": "node server.index.js",
+    "dev": "NODE_ENV=development npx nodemon index.js",
+    "prod": "NODE_ENV=production node index.js",
+    "client-dev": "NODE_ENV=development npx tsc -p ./client/ --watch",
+    "dev:debug": "NODE_ENV=development npx nodemon --inspect index.js",
+
+    "deploy": "./test.sh --environment production  ",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "alreylz",
+  "author": "Alejandro Rey López - https://alreylz.me/  @ESPACIOSOA",
   "license": "ISC",
-  "description": "",
+  "description": "A web application for managing and visualizing 5G indoor positioning data recorded using a mobile app. The application allows users to upload, visualize, and analyze the data, providing insights into indoor positioning accuracy and performance.",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
     "express": "^4.21.2",
     "heatmap.js": "^2.0.5",
     "jsonwebtoken": "^9.0.2",

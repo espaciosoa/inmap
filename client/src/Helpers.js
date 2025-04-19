@@ -57,6 +57,10 @@ export default class JSUtils {
     }
 
 
+
+
+   
+
     static isString(x) {
         return typeof x === "string" || x instanceof String || Object.prototype.toString.call(x) === "[object String]"
     }
