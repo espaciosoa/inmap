@@ -450,18 +450,19 @@ select {
 .modal-wrapper:has(.my-load-popup.open) {
     display: block;
 }
-.modal-wrapper:has(.my-load-popup){
+
+.modal-wrapper:has(.my-load-popup) {
     display: none;
 }
 
 
-.modal-bg-page-cover{
+.modal-bg-page-cover {
     display: block;
     position: absolute;
-    top:0%;
-    left:0%;
-    right:0%;   
-    bottom:0%;  
+    top: 0%;
+    left: 0%;
+    right: 0%;
+    bottom: 0%;
     background-color: #3077715e;
     filter: blur(10px);
     z-index: 9999;
