@@ -415,3 +415,94 @@ select {
     transition: all 300ms;
     color: #000;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.rotate {
+    animation: rotate linear 1s infinite;
+}
+
+
+
+
+/* Quick and dirty popup global popup window to show when loading */
+
+.modal-wrapper:has(.my-load-popup.open) {
+    display: block;
+}
+.modal-wrapper:has(.my-load-popup){
+    display: none;
+}
+
+
+.modal-bg-page-cover{
+    display: block;
+    position: absolute;
+    top:0%;
+    left:0%;
+    right:0%;   
+    bottom:0%;  
+    background-color: #3077715e;
+    filter: blur(10px);
+    z-index: 9999;
+}
+
+
+
+.my-load-popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+
+    background-color: #3D3D3D;
+    color: white;
+    padding: 1em;
+    border-radius: 1em;
+    font-size: large;
+}
+
+.my-load-popup .loading-text {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.my-load-popup {
+    display: none;
+}
+
+.my-load-popup.open {
+    display: block;
+}
+
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

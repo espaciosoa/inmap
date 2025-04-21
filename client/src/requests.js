@@ -1,6 +1,6 @@
 
-// const API_BASE_URL = "https://test.alreylz.me/v1/API/"
-const API_BASE_URL = "https://localhost:8442/v1/API/"
+const API_BASE_URL = "https://test.alreylz.me/v1/API/"
+// const API_BASE_URL = "https://localhost:8442/v1/API/"
 
 
 

@@ -31,6 +31,25 @@ import { PageState } from "./dist/PageState.js"
 
 
 
+const LOADING_SCREEN = document.querySelector(".my-load-popup")
+const LOADING_SCREEN_TEXT = LOADING_SCREEN.querySelector(".loading-text")   
+
+function showLoadingScreen(text) {
+    LOADING_SCREEN.classList.add("open")
+    LOADING_SCREEN_TEXT.innerText = text || "Cargando..."
+}
+function hideLoadingScreen() {
+    LOADING_SCREEN_TEXT.innerText = "Cargando..."
+    LOADING_SCREEN.classList.remove("open")
+}
+
+
+
+
+
+
+showLoadingScreen("Loading data from API")
+
 console.groupCollapsed("API Rest Data: 📱📏📶📱📏📶📱📏📶")
 
 const allRooms = await getRooms();
@@ -43,7 +62,7 @@ const allMeasurements = await getMeasurements();
 console.log("📶 MEASUREMENTS ", allMeasurements)
 
 console.groupEnd()
-
+hideLoadingScreen()
 
 
 
