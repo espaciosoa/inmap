@@ -198,7 +198,7 @@ function createTableFromObject(data) {
             valueAux = JSON.parse(value)
         }
         catch(e){
-            console.log("attempted to convert to value")
+            // console.log("attempted to convert to value")
             valueAux = value;
         }
 
@@ -273,7 +273,7 @@ function createTableFromArray(data) {
 
 
 
-
+const editableKeys = ["lat", "lon"]
 
 export function showMeasurementsAsTable(parent, measurements) {
     parent.replaceChildren(createTableFromArray(measurements));

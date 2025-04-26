@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const { Room, MeasurementSession, RoomMeasurement } = require("../../model/allModels")
 
-const { authMiddleware, protectedAPIAuthMiddleWare} = require("./middlewares/Middlewares.md")
+const { authMiddleware, protectedAPIAuthMiddleWare } = require("./middlewares/Middlewares.md")
 
 // Define routes for all REST methods
 router.get('/',/*[protectedAPIAuthMiddleWare ],*/ async (req, res) => {
@@ -34,7 +34,7 @@ router.get("/:roomId", async (req, res) => {
     result["sessions"] = []
     for (s of itsSessions) {
 
-      const aSessionMeasurements = await RoomMeasurement.find({ measurementSession	: s._id });
+      const aSessionMeasurements = await RoomMeasurement.find({ measurementSession: s._id });
       result["sessions"].push(
         {
           session: s,
@@ -70,8 +70,10 @@ router.post('/', [authMiddleware], async (req, res) => {
 
   // Check for name of room
   const room_IncomingObject = req.body
-  delete room_IncomingObject["remoteSync"]
-  delete room_IncomingObject["roomId"]
+  if ("remoteSync" in room_IncomingObject)
+    delete room_IncomingObject["remoteSync"]
+  if ("roomId" in room_IncomingObject)
+    delete room_IncomingObject["roomId"]
 
 
   console.log(room_IncomingObject)

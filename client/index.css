@@ -438,14 +438,17 @@ select {
 
 
 
+
+
+
+
+/* @alreylz FOR THE LOVE OF GOD PLEASE ALEX REFACTOR ME */
+/* Quick and dirty popup global popup window to show when loading */
+
+
 .rotate {
     animation: rotate linear 1s infinite;
 }
-
-
-
-
-/* Quick and dirty popup global popup window to show when loading */
 
 .modal-wrapper:has(.my-load-popup.open) {
     display: block;
@@ -463,6 +466,7 @@ select {
     left: 0%;
     right: 0%;
     bottom: 0%;
+    height: 100%;
     background-color: #3077715e;
     filter: blur(10px);
     z-index: 9999;

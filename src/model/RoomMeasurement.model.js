@@ -10,6 +10,7 @@ const RoomMeasurementSchema = new Schema({
     timestamp : String,
     position: mongoose.Schema.Types.Mixed,
     signalMeasurement: mongoose.Schema.Types.Mixed,
+    measurementDevice: {type: String},
     version: {
         type: Number,
         default: 1

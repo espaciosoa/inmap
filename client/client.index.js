@@ -9,7 +9,7 @@ import { LEAFLET_POPUP_HTML_TEMPLATE } from "./src/leaflet.templates.js"
 
 
 import { getRooms, getSessions, getMeasurements } from "/src/requests.js"
-import { requestIAAPI } from "./src/requests.ia.js"
+import { requestIAAPI, requestIATraining, requestTrainingJobStatus, requestIAAPIReal } from "./src/requests.ia.js"
 import { loadBase64Image } from "./src/image.utils.js"
 
 
@@ -32,7 +32,7 @@ import { PageState } from "./dist/PageState.js"
 
 
 const LOADING_SCREEN = document.querySelector(".my-load-popup")
-const LOADING_SCREEN_TEXT = LOADING_SCREEN.querySelector(".loading-text")   
+const LOADING_SCREEN_TEXT = LOADING_SCREEN.querySelector(".loading-text")
 
 function showLoadingScreen(text) {
     LOADING_SCREEN.classList.add("open")
@@ -295,7 +295,9 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0) {
     )
 
     //This needs to be called when the map is initialized with data
-    showNumericPropertiesAsSelect(getFilterablePropertiesList("4G"),
+    showNumericPropertiesAsSelect(
+
+        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type),
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
 
@@ -324,7 +326,8 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
 
     //This needs to be called when the map is initialized with data
-    showNumericPropertiesAsSelect(["dbm", "csiRsrp", "csiRsrq", "level"],
+    showNumericPropertiesAsSelect(
+        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type)        ,
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
 
@@ -438,7 +441,7 @@ map.on("dblclick", (e) => {
 
     //Create a circle to show the estimated point visually
     const estimatedPoint = L.circle(toEstimatePoint, {
-        color:"#32cd9f",
+        color: "#32cd9f",
         fillOpacity: 0.5,
         radius: 0.05,
         className: "estimated-point"
@@ -674,8 +677,37 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
 
+const TEST_ROOM = "paci2";
+let job = null
+
+document.querySelector(".ia-training-btn").addEventListener("click", async (ev) => {
+    console.log("Training button clicked")
+    job = await requestIATraining(TEST_ROOM)
+
+    alert("Training job started, check console for updates")
+    alert(JSON.stringify(job))
+    console.log("JOB ID", job)
+
+})
+
+document.querySelector(".ia-status-btn").addEventListener("click", async (ev) => {
 
 
+    const jobStatus = await requestTrainingJobStatus(job.job_id)
+
+    alert("Training job started, check console for updates")
+    alert(JSON.stringify(jobStatus))
+
+})
+document.querySelector(".ia-inference-btn").addEventListener("click", async (ev) => {
+
+
+    console.log("Inference button clicked")
+    const inference = await requestIAAPIReal(TEST_ROOM)
+
+    alert("Inference done check console for updates. Should be the image", inference)
+
+})
 
 
 
@@ -684,19 +716,22 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
 // @todo : HERE I WAS DOING TESTS WITH THE IA API
-try {
-    var imgData = await requestIAAPI()
-    console.log("IMG DATA", imgData)
-    var myImg = loadBase64Image(imgData.base64)
+// try {
+//     var imgData = await requestIAAPI()
+//     console.log("IMG DATA", imgData)
+//     var myImg = loadBase64Image(imgData.base64)
 
-    var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg',
-        imageBounds = [[40.4233828, -3.7121647], [40.4233828 + 1, -3.7121647 + 1]];
-    L.imageOverlay(myImg, imageBounds).addTo(map);
+//     //Do request 
+//     console.log(requestIATraining("paci2"))
 
-}
-catch (e) {
-    console.warn("Error loading image (maybe IA endpoint is not active)", e)
-}
+//     // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg',
+//     let imageBounds = [[40.4233828, -3.7121647], [40.4233828 + 1, -3.7121647 + 1]];
+//     L.imageOverlay(myImg, imageBounds).addTo(map);
+
+// }
+// catch (e) {
+//     console.warn("Error loading image (maybe IA endpoint is not active)", e)
+// }
 
 
 // Table showing all measurements

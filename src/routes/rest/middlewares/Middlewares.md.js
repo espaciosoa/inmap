@@ -14,8 +14,8 @@ const FIXED_AUTH_TOKEN = "WEDONTUSETOKENSAROUNDHERE"
 // Authentication Middleware
 const authMiddleware = (req, res, next) => {
     const token = req.headers['authorization'];
-    if (token === FIXED_AUTH_TOKEN) {
-        console.log("VALID TOKEN")
+    if (token === FIXED_AUTH_TOKEN || isAuthenticated(req)) {
+        console.log("VALID TOKEN (Token or fixed auth token)")
         next();
     } else {
         res.status(401).send('Unauthorized');

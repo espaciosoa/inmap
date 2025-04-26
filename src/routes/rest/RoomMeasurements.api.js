@@ -32,16 +32,29 @@ router.post('/', async (req, res) => {
   //TODO: check that the measurements are associated to an existing session and existing room
   const roomMeasurementId = uuidv4()
 
-  const nuRoomMeasurement = new RoomMeasurement({
+  let nuRoomMeasurement
+  if (incoming_RoomMeasurement.measurementDevice !== "RaspberryPi4B"){
+    nuRoomMeasurement = new RoomMeasurement({
+      ...incoming_RoomMeasurement,
+      fullCellSignalStrength: JSON.parse(incoming_RoomMeasurement.signalMeasurement.fullCellSignalStrength),
+      fullCellIdentity: JSON.parse(incoming_RoomMeasurement.signalMeasurement.fullCellIdentity),
+      _id: roomMeasurementId
+    })
+  }
+  else{
+    nuRoomMeasurement = new RoomMeasurement({
     ...incoming_RoomMeasurement,
-    fullCellSignalStrength: JSON.parse(incoming_RoomMeasurement.signalMeasurement.fullCellSignalStrength),
-    fullCellIdentity:JSON.parse(incoming_RoomMeasurement.signalMeasurement.fullCellIdentity),
-    _id: roomMeasurementId
+    measurementSession: "UNASSIGNED",
+    //COMPLETE ME WITH THE PROCESSING OF RASPBERRY PI MEASUREMENTS
+  _id: roomMeasurementId  
   })
+
+  }
+
 
   const insertedMeasurement = await nuRoomMeasurement.save()
 
-  console.log("Recorded new measurement : "+ Date.now().toLocaleString())
+  console.log("Recorded new measurement : " + Date.now().toLocaleString())
 
   res.json(insertedMeasurement);
 });
