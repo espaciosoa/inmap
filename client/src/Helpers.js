@@ -52,14 +52,26 @@ export default class JSUtils {
         const placeholderRegex = /{{(.*?)}}/g;
 
         return template.replace(placeholderRegex, (_, placeholderName) => {
-            return replacements[placeholderName.trim()] || "";
+
+            console.log(`replacing things in the template ${placeholderName}`, typeof (replacements[placeholderName.trim()]))
+
+
+            const toReplaceValue = replacements[placeholderName.trim()]
+
+            if (typeof (toReplaceValue) !== "function")
+                return toReplaceValue || "";
+            else {
+                console.warn(`It seems like you are trying to replace a placeholder "${placeholderName}" JSUtils.replaceTemplatePlaceholders. However, function substitution is not supported. It will be replaced by nothing`)
+                console.log(toReplaceValue)
+                return ""
+            }
         });
     }
 
 
 
 
-   
+
 
     static isString(x) {
         return typeof x === "string" || x instanceof String || Object.prototype.toString.call(x) === "[object String]"

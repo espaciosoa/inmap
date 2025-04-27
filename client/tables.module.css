@@ -12,9 +12,6 @@
 .table-container {
     max-width: 100%;
 
-
-
-
     border: 1px solid #ccc;
 
     background-color: white;
@@ -35,12 +32,7 @@
 
 
 
-/* Used to debug the showing of objects recursively */
-.sos {
-    outline: red 1px solid;
-    text-align: left;
-    /* padding: 0.2em; */
-}
+
 
 table {
     width: 100%;
@@ -99,4 +91,25 @@ thead.fixed-header {
 
 tbody tr:nth-child(even) {
     background-color: rgba(141, 179, 179, 0.336);
+}
+
+
+
+
+/* Used to debug the showing of objects recursively */
+.sos {
+    outline: red 1px solid;
+    text-align: left;
+    /* padding: 0.2em; */
+}
+
+
+.editable-cell{
+
+    input{
+        width:-webkit-fill-available;
+
+    }
+
+
 }

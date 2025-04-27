@@ -182,7 +182,25 @@ function isObject(item) {
 
 
 
-function createTableFromObject(data) {
+const cellHTML_template = ` <div class="editable-cell">
+            <!-- <data>{{value}}</data> -->
+            <label>{{key}} <label/>
+            <input data-key-path={{keyPath}} name="key" value={{value}} />
+        </div>`
+
+
+
+
+
+
+//Recursively destructures objects (last key is used to annotate cells with their recursive path e.g., obj.field.innerField.YetAnotherField )
+// Opts allows to specify some keys as editable
+
+function createTableFromObject(data, lastKey = "", opts = {
+    editableKeys: ["lat", "long"],
+
+
+}) {
     const elem = document.createElement("div");
     elem.classList.add("sos");
 
@@ -194,21 +212,37 @@ function createTableFromObject(data) {
 
         //UGLY HACK TO SHOW KEYPAIR VALUES AT DIFFERENT LEVELS
         let valueAux = value;
-        try{
+        try {
             valueAux = JSON.parse(value)
         }
-        catch(e){
+        catch (e) {
             // console.log("attempted to convert to value")
             valueAux = value;
         }
 
 
         if (isObject(valueAux)) {
-            const subElem = createTableFromObject(valueAux);
+            const subElem = createTableFromObject(valueAux, `${lastKey}.${key}`);
             kvItemHTML.textContent = `${key}:`;
             kvItemHTML.appendChild(subElem);
         } else {
-            kvItemHTML.textContent = `${key} : ${valueAux}`;
+
+
+            if (editableKeys.includes(key)) {
+
+                const replaced = JSUtils.replaceTemplatePlaceholders(cellHTML_template,
+                    {
+                        key: key,
+                        value: valueAux,
+                        value: valueAux,
+                        keyPath: `${lastKey}.${key}`
+                    })
+                const htmlEditableNode = JSUtils.txtToHTMLNode(replaced);
+                kvItemHTML.appendChild(htmlEditableNode)
+            }
+            else {
+                kvItemHTML.textContent = `${key} : ${valueAux}`;
+            }
         }
 
         elem.appendChild(kvItemHTML);
@@ -218,6 +252,20 @@ function createTableFromObject(data) {
 }
 
 
+
+
+
+const objectValueHTML_template = ` <div class="editable-cell">
+            <input data-key-path={{keyPath}}
+             onChange={{handleChange}} 
+             name="{{keyPath}}" 
+             value={{value}} />
+        </div>`
+
+
+function myHandleChange(ev) {
+    alert(ev)
+}
 
 function createTableFromArray(data) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -248,22 +296,36 @@ function createTableFromArray(data) {
     const tbody = document.createElement('tbody');
     data.forEach(obj => {
         const row = document.createElement('tr');
+        //Create a row for each array element
         keys.forEach(key => {
             const td = document.createElement('td');
+            td.classList.add("table-cell")
 
-            // console.log(obj[key])
-            if (!isObject(obj[key]))
-                td.textContent = obj[key];
-            else
-                td.replaceChildren(createTableFromObject(obj[key]))
+            //IF IT IS A "SIMPLE VALUE" (can't be decomposed more in JSON)
+            if (!isObject(obj[key])) {
+                const valueFromTemplate = JSUtils.txtToHTMLNode(JSUtils.replaceTemplatePlaceholders(objectValueHTML_template,
+                    {
+                        keyPath: key,
+                        value: obj[key],
+                        handleChange: myHandleChange // This won't work alex
 
+                    }))
+                
+                    //Here you can actually listen to changes and change the object itself
+                    //Then maybe add a button to confirm and reload map
+
+                td.replaceChildren(valueFromTemplate                )
+                // td.textContent = obj[key]; //Previous, no fancy
+            }
+            //Here 
+            else {
+                td.replaceChildren(createTableFromObject(obj[key], key))
+            }
 
             row.appendChild(td);
         });
         tbody.appendChild(row);
     });
-
-
     table.appendChild(tbody);
     tableWrapper.appendChild(table)
 
