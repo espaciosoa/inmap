@@ -49,29 +49,79 @@ export default class JSUtils {
      *         });
      */
     static replaceTemplatePlaceholders(template, replacements) {
+        // First, handle attributes like onClick={{handlerName}}
+        const eventAttrRegex = /(on\w+)={{(.*?)}}/g;
+
+        template = template.replace(eventAttrRegex, (_, eventAttrName, handlerName) => {
+            const trimmedHandlerName = handlerName.trim();
+            const eventNameLower = eventAttrName.toLowerCase(); // onChange -> onchange
+            return `data-event-${eventNameLower}="${trimmedHandlerName}"`;
+        });
+
+        // Now handle plain text placeholders {{buttonText}}
         const placeholderRegex = /{{(.*?)}}/g;
-
         return template.replace(placeholderRegex, (_, placeholderName) => {
+            const trimmedName = placeholderName.trim();
+            const toReplaceValue = replacements[trimmedName];
 
-            console.log(`replacing things in the template ${placeholderName}`, typeof (replacements[placeholderName.trim()]))
-
-
-            const toReplaceValue = replacements[placeholderName.trim()]
-
-            if (typeof (toReplaceValue) !== "function")
-                return toReplaceValue || "";
-            else {
-                console.warn(`It seems like you are trying to replace a placeholder "${placeholderName}" JSUtils.replaceTemplatePlaceholders. However, function substitution is not supported. It will be replaced by nothing`)
-                console.log(toReplaceValue)
-                return ""
+            if (typeof toReplaceValue === "function") {
+                console.warn(`Warning: trying to inject a function into text at {{${trimmedName}}}. Ignoring.`);
+                return "";
+            } else {
+                return toReplaceValue ?? "";
             }
         });
     }
 
+    // static bindHandlers(context, replacements) {
 
 
 
+    //     context.querySelectorAll('[data-event-onclick], [data-event-onchange], [data-event-oninput], [data-event-onsubmit]').forEach(el => {
+    //         Array.from(el.attributes).forEach(attr => {
+    //             if (attr.name.startsWith('data-event-')) {
+    //                 const eventType = attr.name.replace('data-event-on', ''); // 'onclick' -> 'click'
+    //                 const handlerName = attr.value;
+    //                 const handler = replacements[handlerName];
 
+    //                 console.log(`Binding handler ${handlerName} to event ${eventType} on element`, el);
+
+    //                 if (typeof handler === 'function') {
+    //                     el.addEventListener(eventType, handler);
+    //                 } else {
+    //                     console.warn(`Handler "${handlerName}" not found in replacements`);
+    //                 }
+
+    //                 // Optionally: Clean up
+    //                 // el.removeAttribute(attr.name);
+    //             }
+    //         });
+    //     });
+    // }
+
+    static bindHandlers(context, replacements) {
+        const allElements = [context, ...context.querySelectorAll('*')]; // 👈 include context itself and all its descendants
+        allElements.forEach(el => {
+            Array.from(el.attributes).forEach(attr => {
+                if (attr.name.startsWith('data-event-')) {
+                    const eventType = attr.name.replace('data-event-on', ''); // 'onclick' -> 'click'
+                    const handlerName = attr.value.trim();
+                    const handler = replacements[handlerName];
+
+                    console.log(`Binding handler ${handlerName} to event ${eventType} on element`, el);
+
+                    if (typeof handler === 'function') {
+                        el.addEventListener(eventType, handler);
+                    } else {
+                        console.warn(`Handler "${handlerName}" not found in replacements`);
+                    }
+
+                    // Optionally clean:
+                     el.removeAttribute(attr.name);
+                }
+            });
+        });
+    }
 
     static isString(x) {
         return typeof x === "string" || x instanceof String || Object.prototype.toString.call(x) === "[object String]"
