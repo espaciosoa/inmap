@@ -20,3 +20,4 @@ export const LEAFLET_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">
     <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
 </footer>
 </div>`
+

@@ -1,0 +1,53 @@
+{
+    "_id": "5b0efacf-dec3-4f35-b967-9b0d53a56f31",
+    "roomId": "4b263c56-e297-4eaf-b79b-0e6875a5d9e9",
+    "timestamp": "2025-04-22T17:44:16.741117Z",
+    "measurementDevice": "ANDROID_PHONE",
+    "position": {
+        "x": 104.69388,
+        "y": 77.30042,
+        "z": 137.1038
+    },
+    "signalMeasurement": {
+        "dbm": -83,
+        "asuLevel": 57,
+        "qualityLevel": 4,
+        "dataNetworkType": "4G",
+        "fullCellSignalStrength": "{\"type\":\"4G\",\"dbm\":-83,\"asuLevel\":57,\"level\":4,\"cqi\":8,\"cqiTableIndex\":2147483647,\"rsrp\":-83,\"rsrq\":-12,\"rssi\":2147483647,\"rssnr\":0,\"timingAdvance\":3}",
+        "fullCellIdentity": "{\"operatorAlphaLong\":\"Orange\",\"operatorAlphaShort\":\"Orange\",\"additionalPlmns\":\"{}\",\"bands\":\"[7, 1, 28]\",\"bandwidth\":20000,\"ci\":23552,\"closedSubscriberGroupInfo\":\"null\",\"earfcn\":3050,\"mccString\":\"214\",\"mncString\":\"03\",\"mobileNetworkOperator\":\"21403\",\"pci\":138,\"tac\":1350}"
+    },
+    "version": 1,
+    "measurementSession": "97c46a99-66c2-48e6-98d3-bcf5e12f5d9e",
+    "worldCoords": {
+        "lat": 40.4047926983608,
+        "lon": -3.67356500810345
+    },
+    "fullCellSignalStrength": {
+        "type": "4G",
+        "dbm": -83,
+        "asuLevel": 57,
+        "level": 4,
+        "cqi": 8,
+        "cqiTableIndex": 2147483647,
+        "rsrp": -83,
+        "rsrq": -12,
+        "rssi": 2147483647,
+        "rssnr": 0,
+        "timingAdvance": 3
+    },
+    "fullCellIdentity": {
+        "operatorAlphaLong": "Orange",
+        "operatorAlphaShort": "Orange",
+        "additionalPlmns": "{}",
+        "bands": "[7, 1, 28]",
+        "bandwidth": 20000,
+        "ci": 23552,
+        "closedSubscriberGroupInfo": "null",
+        "earfcn": 3050,
+        "mccString": "214",
+        "mncString": "03",
+        "mobileNetworkOperator": "21403",
+        "pci": 138,
+        "tac": 1350
+    }
+}

@@ -181,7 +181,7 @@ export function generatePointsInRadius(centerX, centerY, radius, numPoints) {
         const x = centerX + distance * Math.cos(angle);
         const y = centerY + distance * Math.sin(angle);
 
-        console.log(`CENTER IS ${centerX} ${centerY}`)
+        // console.log(`CENTER IS ${centerX} ${centerY}`)
         points.push({ lat: x, lon: y });
     }
 

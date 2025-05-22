@@ -29,3 +29,27 @@ export async function getRooms() {
 
     return await response.json();
 }
+
+
+export async function putSession(session) {
+    
+    const sessionCopy = { ...session };
+    delete sessionCopy._id;
+    const response = await fetch(API_BASE_URL + `MeasurementSessions/${session._id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sessionCopy),
+    });
+
+    return await response.json();
+}
+
+
+export async function deleteSession(sessionId) {
+    const response = await fetch(API_BASE_URL + "MeasurementSessions/" + sessionId, {
+        method: "DELETE",
+    });
+    return await response.json();
+}

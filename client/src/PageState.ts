@@ -57,6 +57,7 @@ export class PageState extends EventManager {
 
     get activeRoom() { return this._activeRoom }
     set activeRoom(room) {
+        if (this._activeRoom === room) return
         this._activeRoom = room;
         this._activeSessions = []
         this._dispatch("onActiveRoomChanged", this._activeRoom);
@@ -64,19 +65,19 @@ export class PageState extends EventManager {
     }
 
 
-
     addSession(session: Session) {
+        if (this._activeSessions.find((s: Session) => s._id === session._id)) return
         this._activeSessions.push(session)
         this._dispatch("onActiveSessionsChanged", this._activeSessions)
         this.#overallStateChange()
     }
     removeSession(session: Session) {
-        this._activeSessions.pop(session)
+        if (!this._activeSessions.find((s: Session) => s._id === session._id)) return
+        this._activeSessions = this._activeSessions.filter((s: Session) => s._id !== session._id);
         this._dispatch("onActiveSessionsChanged", this._activeSessions)
         this.#overallStateChange()
 
     }
-
 
     get activeSessions() { return this._activeSessions }
 
@@ -88,6 +89,7 @@ export class PageState extends EventManager {
 
     get activeMeasurements() { return this._activeMeasurements }
     set activeMeasurements(measurements: Measurement[]) {
+        if (this._activeMeasurements === measurements) return
         this._activeMeasurements = measurements;
         this._dispatch("onMeasurementsChanged", this._activeMeasurements);
         this.#overallStateChange()
@@ -95,19 +97,19 @@ export class PageState extends EventManager {
     }
 
 
-    
-    get visualizingProperty(): NumericProperty | null{
-        return this._visualizingProperty 
+
+    get visualizingProperty(): NumericProperty | null {
+        return this._visualizingProperty
     }
-    set visualizingProperty(propertyName: NumericProperty){
-        // if(isValid(propertyName))
-        this._visualizingProperty  = propertyName
+    set visualizingProperty(propertyName: NumericProperty) {
+        if (this._visualizingProperty === propertyName) return
+        this._visualizingProperty = propertyName
         this._dispatch("onVisualizedPropertyChanged", this._visualizingProperty);
         this.#overallStateChange()
 
     }
 
-     
+
 
 
 

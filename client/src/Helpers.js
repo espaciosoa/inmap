@@ -100,7 +100,7 @@ export default class JSUtils {
     // }
 
     static bindHandlers(context, replacements) {
-        const allElements = [context, ...context.querySelectorAll('*')]; // 👈 include context itself and all its descendants
+        const allElements = [context, ...context.querySelectorAll('*')]; // Include context itself and all its descendants
         allElements.forEach(el => {
             Array.from(el.attributes).forEach(attr => {
                 if (attr.name.startsWith('data-event-')) {

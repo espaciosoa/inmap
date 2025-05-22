@@ -1,0 +1,13 @@
+{
+    "_id": "53867b38-a5c0-485c-81db-55be7ba73da2",
+    "roomId": "4b263c56-e297-4eaf-b79b-0e6875a5d9e9",
+    "timestamp": "2025-04-22T18:23:43.211132Z",
+    "measurementDevice": "ANDROID_PHONE",
+    "version": 1,
+    "sessionId": "abd10d4d-6a3b-499c-8fd9-0a43c22c0e17",
+    "worldPosition": {
+        "lat": 40.4025093,
+        "lon": -3.6769438
+    },
+    "measuremensOwner": "ESPACIOSOA"
+}

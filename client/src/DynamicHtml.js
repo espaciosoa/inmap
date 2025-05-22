@@ -1,7 +1,8 @@
 
 import JSUtils from "./Helpers.js";
 import { getNaturalLanguageDate } from "/src/converters.js";
-
+import { putSession, deleteSession } from "./requests.js";
+import { validateLat, validateLong } from "./geo.utils.js";
 
 function isObject(item) {
     return (item && typeof item === "object" && !Array.isArray(item));
@@ -56,7 +57,7 @@ export function showRoomsAsSelectOptions(selectItem, state, rooms, selected = un
         const optionNode = JSUtils.txtToHTMLNode(myOptionFilledTemplate)
 
         //set selected by default if any
-        console.log("SETTING SELECTED", selected)
+        // console.log("SETTING SELECTED", selected)
         if (selected && selected._id === r._id)
             optionNode.selected = true;
 
@@ -83,7 +84,7 @@ export function showRoomsAsSelectOptions(selectItem, state, rooms, selected = un
 export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = []) {
 
     const option_HTML_Template = `<li class="session-item">
-            <label>
+            <label class="bold" >
                 <span class="session-name">{{sessionId}}</span> |
                 <span class="session-date">{{sessionDate}}</span>
             </label>
@@ -205,28 +206,25 @@ export function showNumericPropertiesAsSelect(properties, selected, onChangeSele
 
 const cellHTML_template = ` <div class="editable-cell">
             <!-- <data>{{value}}</data> -->
-            <label>{{key}} <label/>
+            <label class="bold"> {{key}} </label>
             <input data-key-path={{keyPath}}
-             name="key" 
+             name={{key}} 
              value={{value}}
              onClick={{handleClick}}}}
              onChange={{handleChange}}}}
              />
         </div>`
 
-
-
-
-
 //Recursively destructures objects (last key is used to annotate cells with their recursive path e.g., obj.field.innerField.YetAnotherField )
 // Opts allows to specify some keys as editable
 
 function createTableFromObject(data, lastKey = "", opts = {
     editableKeys: ["lat", "long"],
+    validateValues: null,
 
 }) {
     const elem = document.createElement("div");
-    elem.classList.add("sos");
+    elem.classList.add("inner-object");
 
     const kvPairs = Object.entries(data);
 
@@ -252,7 +250,27 @@ function createTableFromObject(data, lastKey = "", opts = {
 
                 const handlers = {
                     handleClick: (e) => { console.log("Found and clicked editable inner key", key) },
-                    handleChange: (e) => { console.log("CHANGED value in cell", ev.target.value) }
+                    handleChange: (e) => {
+                        console.log(`User changed ${key} = ${data[key]} to value ${e.target.value}`)
+
+                        //If we have a validation function, use it
+                        if (opts.validateValues) {
+                            const validated = opts.validateValues(key, e.target.value)
+                            if (validated !== null) {
+                                e.target.classList.remove("invalid")
+                                e.target.classList.add("valid")
+                                data[key] = validated
+                            }
+                            else {
+                                e.target.classList.add("invalid")
+                                e.target.classList.remove("valid")
+                                console.warn("Invalid value", e.target.value)
+                            }
+                        }
+                        else {
+                            data[key] = e.target.value
+                        }
+                    }
                 }
                 const replaced = JSUtils.replaceTemplatePlaceholders(cellHTML_template,
                     {
@@ -283,19 +301,15 @@ function createTableFromObject(data, lastKey = "", opts = {
 
 
 
-
-// function myHandleChange(ev) {
-//     console.log("CHANGED", ev.target.value)
-//     alert(ev.target.value)
-// }
-
 function createTableFromArray(data,
     opts = {
         editable: true,
         editableKeys: ["lat", "long"],
         //I should replace these with my handlers when using
         handleSave: null,
-        handleDelete: null
+        handleDelete: null,
+        // (takes key, value) and returns the value to be set
+        validateValues: null,
     }) {
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -319,6 +333,14 @@ function createTableFromArray(data,
         th.textContent = key;
         headerRow.appendChild(th);
     });
+
+    if (opts.editableKeys && opts.editableKeys.length > 0) {
+        const th = document.createElement('th');
+        th.textContent = "Actions";
+        headerRow.appendChild(th);
+    }
+
+
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
@@ -342,14 +364,30 @@ function createTableFromArray(data,
                     console.log("FOUND EDITABLE KEY", key)
                     const handlers = {
                         handleChange: (e) => {
-                            console.log('Changed to:', e.target.value)
-                            obj[key] = e.target.value
+                            console.log(`User changed ${key} = ${obj[key]} to value ${e.target.value}`)
+
+                            //If we have a validation function, use it
+                            if (opts.validateValues) {
+                                const validated = opts.validateValues(key, e.target.value)
+                                if (validated !== null) {
+                                    e.target.classList.remove("invalid")
+                                    e.target.classList.add("valid")
+                                    obj[key] = validated
+                                }
+                                else {
+                                    e.target.classList.add("invalid")
+                                    e.target.classList.remove("valid")
+                                    console.warn("Invalid value", e.target.value)
+                                }
+                            }
+                            else {
+                                obj[key] = e.target.value
+                            }
                         },
                         handleClick: (e) => { console.log('Clicked editableValue:', e.target.value) }
                     };
 
                     const objectValueHTML_template = ` <div class="editable-cell">
-                        <span> PLAIN ELEM </span>
                         <input data-key-path={{keyPath}}
                         onClick={{handleClick}}   
                         onChange={{handleChange}}         
@@ -361,7 +399,7 @@ function createTableFromArray(data,
                         JSUtils.replaceTemplatePlaceholders(objectValueHTML_template,
                             {
                                 keyPath: key,
-                                value: obj[key] + "SOS",
+                                value: obj[key],
                                 handleClick: handlers.handleClick,
                                 handleChange: handlers.handleChange
 
@@ -389,19 +427,20 @@ function createTableFromArray(data,
         if (opts.editableKeys && opts.editableKeys.length > 0) {
 
             const replacements = {
-                saveText: "Save",
-                deleteText: "Delete",
+                saveText: "Save 💾",
+                deleteText: "Delete 🗑️",
                 // Passed as parameters to the function
-                handleSave: opts.handleSave ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) },
-                handleDelete: opts.handleDelete ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) }
+                handleSave: () => opts.handleSave(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) },
+                handleDelete: () => opts.handleDelete(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) }
 
             }
 
-            const templateButtons = `
-            <div> 
+            const templateButtons = `<td>
+            <div class="row-action-buttons">
                 <button class="btn" onClick={{handleSave}} > {{saveText}}  </button>
                 <button class="btn" onClick={{handleDelete}} > {{deleteText}}  </button>
             </div>
+            </td>
             `
             const node = JSUtils.txtToHTMLNode(
                 JSUtils.replaceTemplatePlaceholders(templateButtons,
@@ -432,9 +471,11 @@ function createTableFromArray(data,
 
 // ACTUALLY SHOWING THE TABLES
 export function showMeasurementsAsTable(parent, measurements) {
+    const measurementsCopy = structuredClone(measurements)
+
     parent.replaceChildren(
         createTableFromArray(
-            measurements,
+            measurementsCopy,
             //Parameters for the table
             {
                 editableKeys: ["lat", "lon"],
@@ -443,25 +484,80 @@ export function showMeasurementsAsTable(parent, measurements) {
         ;
 }
 
+
+
 export function showRoomAsTable(parent, room) {
+    const roomCopy = structuredClone(room)
     parent.replaceChildren(
         createTableFromArray(
-            [room],
+            [roomCopy],
             //Parameters for the table
-            {
-                editable: true,
-                editableKeys: ["name", "_id"],
-                handleSave: (ev) => { console.log("AAAAAAAAAAAASave clicked for room", room) },
-                handleDelete: (ev) => { console.log("AAAAAAAAAAAAA  Delete clicked for room", room) }
-            }));
+            // {
+            //     editable: true,
+            //     editableKeys: ["name", "_id"],
+            //     handleSave: (ev) => { console.log("AAAAAAAAAAAASave clicked for room", room) },
+            //     handleDelete: (ev) => { console.log("AAAAAAAAAAAAA  Delete clicked for room", room) }
+            // }
+        )
+    );
+}
+
+
+
+
+function safeParseFloat(val) {
+    const parsed = parseFloat(val);
+    return Number.isNaN(parsed) ? null : parsed;
 }
 
 export function showSessionsAsTables(parent, sessions) {
+    const sessionsCopy = structuredClone(sessions)
     parent.replaceChildren(
         createTableFromArray(
-            sessions,
+            sessionsCopy,
             //Parameters for the table
-            { editableKeys: ["lat", "lon", "roomId", "version"] }
-        ));
+            {
+                editable: true,
+                editableKeys: ["lat", "lon"],
+                //Attepmt to validate values before submission
+                validateValues: (key, value) => {
+                    try {
+                        switch (key) {
+                            case "lat": return validateLat(safeParseFloat(value));
+                            case "lon": return validateLong(safeParseFloat(value));
+                        }
+                    }
+                    catch (e) {
+                        console.warn("Error validating value", e.message)
+                        return null
+                    }
+                },
 
+                handleSave: async (obj) => {
+
+
+                    //SHOW MODAL HERE
+                    const result = await putSession(obj)
+
+                    alert(`Session saved ${result.success} ${result.data} ${result.data.message}`)
+
+                    //Replace me with just fetching
+                    window.location.reload(true);
+
+
+                },
+                handleDelete: async (obj) => {
+
+                    //SHOW MODAL HERE
+                    const result = await deleteSession(obj._id)
+                    //SHOW MODAL HERE
+                    alert("Session deleted")
+                    window.location.reload(true);
+
+                }
+
+
+
+            }
+        ));
 }

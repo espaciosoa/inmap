@@ -5,12 +5,18 @@ const RoomMeasurementSchema = new Schema({
     _id: {
         type: String,
         default: uuidv4,
-      },
-    roomId: {type: String, ref: 'Room'},
-    timestamp : String,
+    },
+    roomId: { type: String, ref: 'Room' },
+    timestamp: {
+        type: String,
+        required: [true, 'timestamp should be provided is required']
+    },
     position: mongoose.Schema.Types.Mixed,
     signalMeasurement: mongoose.Schema.Types.Mixed,
-    measurementDevice: {type: String},
+    measurementDevice: {
+        type: String,
+        required: [true, 'measurementDevice is required']
+    },
     version: {
         type: Number,
         default: 1

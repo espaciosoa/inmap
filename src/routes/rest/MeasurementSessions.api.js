@@ -27,8 +27,50 @@ router.post('/', [authMiddleware], async (req, res) => {
 
   console.log(result)
   res.json(createdSession);
-  
+
 });
+
+
+
+router.put("/:id", [authMiddleware], async (req, res) => {
+
+  console.log(`PUT /MeasurementSessions/${req.params.id} Body:`, req.body);
+
+  try {
+
+    const updateSessionOrNull = await MeasurementSession.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).exec()
+
+    if (!updateSessionOrNull) {
+      return res.status(404)
+        .json({
+          success: false,
+          message: "Session not found"
+        });
+    }
+
+    return res.json({
+      success: true,
+      data: updateSessionOrNull
+    });
+  }
+  catch (error) {
+    console.error("Error updating session:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal servfer error"
+    });
+  }
+})
+
+router.delete("/", [authMiddleware], async (req, res) => {
+  throw new Error("NotImplemented")
+})
+
+
 
 
 router.all('*', (req, res) => {

@@ -7,13 +7,13 @@
     "start": "node server.index.js",
     "dev": "NODE_ENV=development npx nodemon index.js",
     "prod": "NODE_ENV=production node index.js",
+    "compile": "NODE_ENV=development npx tsc -p ./client/ ",
     "client-dev": "NODE_ENV=development npx tsc -p ./client/ --watch",
     "dev:debug": "NODE_ENV=development npx nodemon --inspect index.js",
-
     "deploy": "./test.sh --environment production  ",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Alejandro Rey López - https://alreylz.me/  @ESPACIOSOA",
+  "author": "@ESPACIOSOA | Alejandro Rey López - https://alreylz.me/  ",
   "license": "ISC",
   "description": "A web application for managing and visualizing 5G indoor positioning data recorded using a mobile app. The application allows users to upload, visualize, and analyze the data, providing insights into indoor positioning accuracy and performance.",
   "dependencies": {

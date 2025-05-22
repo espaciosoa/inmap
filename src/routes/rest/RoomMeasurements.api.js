@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
   const roomMeasurementId = uuidv4()
 
   let nuRoomMeasurement
-  if (incoming_RoomMeasurement.measurementDevice !== "RaspberryPi4B"){
+  if (incoming_RoomMeasurement.measurementDevice !== "RaspberryPi4B") {
     nuRoomMeasurement = new RoomMeasurement({
       ...incoming_RoomMeasurement,
       fullCellSignalStrength: JSON.parse(incoming_RoomMeasurement.signalMeasurement.fullCellSignalStrength),
@@ -41,16 +41,15 @@ router.post('/', async (req, res) => {
       _id: roomMeasurementId
     })
   }
-  else{
+  else {
     nuRoomMeasurement = new RoomMeasurement({
-    ...incoming_RoomMeasurement,
-    measurementSession: "UNASSIGNED",
-    //COMPLETE ME WITH THE PROCESSING OF RASPBERRY PI MEASUREMENTS
-  _id: roomMeasurementId  
-  })
+      ...incoming_RoomMeasurement,
+      measurementSession: "UNASSIGNED",
+      //COMPLETE ME WITH THE PROCESSING OF RASPBERRY PI MEASUREMENTS
+      _id: roomMeasurementId
+    })
 
   }
-
 
   const insertedMeasurement = await nuRoomMeasurement.save()
 
@@ -58,6 +57,14 @@ router.post('/', async (req, res) => {
 
   res.json(insertedMeasurement);
 });
+
+
+
+
+
+
+
+
 
 // Catch-all route for unsupported methods
 router.all('*', (req, res) => {

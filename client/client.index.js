@@ -14,7 +14,7 @@ import { loadBase64Image } from "./src/image.utils.js"
 
 
 import { getNaturalLanguageDate } from "./src/converters.js"
-import { estimateValueIDW_LatLong, generatePointsInRadius } from "./src/interpolations.js"
+import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox } from "./src/interpolations.js"
 
 
 import JSUtils from "./src/Helpers.js"
@@ -25,44 +25,28 @@ import {
 
 } from "./src/DynamicHtml.js"
 
+import { initPopup } from "./src/popup.js"
 
 import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "./dist/crap.js"
 import { PageState } from "./dist/PageState.js"
 
+const [showPopup, hidePopup] = initPopup()
 
-
-const LOADING_SCREEN = document.querySelector(".my-load-popup")
-const LOADING_SCREEN_TEXT = LOADING_SCREEN.querySelector(".loading-text")
-
-function showLoadingScreen(text) {
-    LOADING_SCREEN.classList.add("open")
-    LOADING_SCREEN_TEXT.innerText = text || "Cargando..."
-}
-function hideLoadingScreen() {
-    LOADING_SCREEN_TEXT.innerText = "Cargando..."
-    LOADING_SCREEN.classList.remove("open")
-}
-
-
-
-
-
-
-showLoadingScreen("Loading data from API")
+showPopup("Loading data from API", "load")
 
 console.groupCollapsed("API Rest Data: 📱📏📶📱📏📶📱📏📶")
-
+showPopup("Loading rooms", "load")
 const allRooms = await getRooms();
 console.log("🏠 ROOMS ", allRooms)
-
+showPopup("Loading sessions from API", "load")
 const allSessions = await getSessions()
 console.log("📱📏 SESSIONS ", allSessions)
-
+showPopup("Loading measurements from API", "load")
 const allMeasurements = await getMeasurements();
 console.log("📶 MEASUREMENTS ", allMeasurements)
-
 console.groupEnd()
-hideLoadingScreen()
+
+hidePopup()
 
 
 
@@ -72,7 +56,7 @@ const myState = new PageState(
     "visualization_state",
     /*default room */ allRooms[0],
     /*default sessions */ allSessions.filter(s => s.roomId == allRooms[0]._id),
-    /*visualizing property*/ null
+    /*visualizing property*/ "dbm"
 )
 
 
@@ -80,6 +64,11 @@ const myState = new PageState(
 const sessionsCheckboxContainer = document.querySelector("[data-dynamic=sessions]")
 // HTMLSelect item to display room options (changing it modifies state)
 const roomOptionsSelect = document.querySelector("[data-dynamic=roomsSelect]")
+// Divs to show interactive tables
+const SESSIONS_DIV = document.querySelector(".tables.sessions")
+const MEASUREMENTS_DIV = document.querySelector(".tables.measurements")
+const ROOM_DIV = document.querySelector(".tables.room")
+
 
 // Init UI with the Initial State
 if (myState !== null) {
@@ -88,7 +77,15 @@ if (myState !== null) {
     showStateInformationSection(myState)
     const activeSessionIds = myState.activeSessions.map(s => s._id)
     myState.activeMeasurements = allMeasurements.filter(m => activeSessionIds.includes(m.measurementSession))
-    // console.log("SET ACTIVE MEASUREMENT INITIAL", myState.activeMeasurements)
+    showRoomAsTable(ROOM_DIV,
+        myState.activeRoom
+    )
+    showSessionsAsTables(SESSIONS_DIV,
+        myState.activeSessions
+    )
+    showMeasurementsAsTable(MEASUREMENTS_DIV,
+        myState.activeMeasurements
+    )
 };
 
 
@@ -100,16 +97,20 @@ myState.subscribe("onActiveRoomChanged", (activeRoom) => {
         allSessions.filter(s => s.roomId == activeRoom._id),
         allSessions.filter(s => s.roomId == activeRoom._id))
     myState.activeSessions = allSessions.filter(s => s.roomId == activeRoom._id)
-
+    showRoomAsTable(ROOM_DIV, activeRoom)
 })
 
 myState.subscribe("onActiveSessionsChanged", (activeSessions) => {
+    showPopup("Loading measurements", "load")
     const activeSessionIds = activeSessions.map(s => s._id)
     // console.log("CHANGED SELECTED SESSIONS ", activeSessions)
     // console.log("Active session ids", activeSessionIds)
     myState.activeMeasurements = allMeasurements.filter(m => activeSessionIds.includes(m.measurementSession))
     // console.log("SETTING APPROPIATE MEASUREMENTS", myState.activeMeasurements)
-
+    showSessionsAsTables(SESSIONS_DIV,
+        myState.activeSessions
+    )
+    hidePopup()
 })
 
 myState.subscribe("onChangeState", (state) => {
@@ -200,7 +201,6 @@ let visualizationCenter = {
 
 
 
-console.log()
 // console.warn("@alreylz - USING ANONYMIZED ORIGIN")
 // origin = { lat: 40.41523, lon: -3.70711 }
 
@@ -273,18 +273,33 @@ map.on('zoomend', () => {
 
 
 const toMapPointsMapper = (measurement) => {
+
+    //We want to treat differently the measurements made with the raspberry
+    if ("measurementDevice" in measurement
+        && measurement.measurementDevice === "RaspberryPi4B"
+    )
+        return {
+            _id: measurement._id,
+            ...measurement.position,
+            timestamp: measurement.timestamp,
+            sessionId: measurement.measurementSession,
+            measurementDevice: measurement.measurementDevice
+        }
+
+
     return {
         _id: measurement._id,
         ...measurement.position,
         ...measurement.fullCellSignalStrength,
         ...measurement.fullCellIdentity,
         timestamp: measurement.timestamp,
-        sessionId: measurement.measurementSession
+        sessionId: measurement.measurementSession,
+        measurementDevice: measurement.measurementDevice || "ANDROID_PHONE"
     }
 }
 
 if (myState.activeMeasurements && myState.activeSessions.length > 0) {
-    myState.visualizingProperty = "dbm"
+    // myState.visualizingProperty = "dbm"
     renderMap(
         map,
         visualizationCenter,
@@ -322,12 +337,9 @@ if (myState.activeMeasurements && myState.activeSessions.length > 0) {
 // Sucripción a cambios de measurements
 myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 
-
-
-
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(
-        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type)        ,
+        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type),
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
 
@@ -335,7 +347,7 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
     )
 
     // Disable interaction while map no measurements are chosen for display
-    toggleAllowInteraction(map, activeMeasurements.length === 0)
+    // toggleAllowInteraction(map, activeMeasurements.length === 0)
 
     const defaultLatLon = { lat: 40.4233828, lon: -3.7121647 } //Plaza mayor
     //RESETEO LA POSICIÓN DEL CENTRO DE LA VISUALIZACIÓN (DEL MAPA)
@@ -343,10 +355,14 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
     console.log("VIS CENTER",)
 
     console.log("ACTIVE MEASUREMENTS CHANGED", activeMeasurements)
-    //BUILDING WHAT THE MAP NEEDS
-    let points = activeMeasurements.map(toMapPointsMapper)
+
+
     renderMap(map, visualizationCenter, myState.activeSessions, activeMeasurements.map(toMapPointsMapper))
 
+
+
+
+    showMeasurementsAsTable(MEASUREMENTS_DIV, structuredClone(activeMeasurements))
 })
 
 
@@ -367,39 +383,6 @@ const inputLong = document.querySelector("input[name=longitude]")
 // inputLong.value = starting.lon
 const inputRot = document.querySelector("input[name=rotation]")
 const form = document.querySelector(".viz-controls-form")
-
-
-
-
-//Gestión de rotar y ajustar origen
-// form.addEventListener("submit", (ev) => {
-//     console.log("Onsubmit ")
-
-//     ev.preventDefault()
-//     origin = {
-//         lat: validateLat(parseFloat(inputLat.value)),
-//         lon: validateLong(parseFloat(inputLong.value))
-//     }
-
-//     console.log("validated origin", origin)
-
-//     clearMapLayers()
-
-
-//     const angleConversion = parseFloat(inputRot.value)
-//     const angle = Number.isNaN(angleConversion) ? 0 : angleConversion;
-
-
-//     console.log("angle", angle)
-
-
-//     //TODO: Get shape of what I need every time
-//     let points = myState.activeMeasurements.map(measurement => { return { ...measurement.position, ...measurement.signalMeasurement } })
-
-//     renderMap(map, origin, points, angle)
-
-
-// })
 
 
 
@@ -432,11 +415,21 @@ map.on("dblclick", (e) => {
     console.log(`🆒 ESTIMATED DBM for unknown point at (${toEstimatePoint.lat}, ${toEstimatePoint.lon}) = ${estimated}`)
 
 
-    const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
+    const popupDataForItem = `<div class="tooltip-point-detail">  
+<header > 
+    <h4>{{title}}</h4>
+</header>
+<div class="center"> 
+  {{value}} {{unit}}
+</div>
+<footer>
+</footer>
+</div>`
     const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
         {
             title: "Estimated point",
-            dbm: estimated,
+            value: estimated.toFixed(2),
+            unit: getPropertyUnit(myState.visualizingProperty)
         })
 
     //Create a circle to show the estimated point visually
@@ -446,8 +439,10 @@ map.on("dblclick", (e) => {
         radius: 0.05,
         className: "estimated-point"
     })
-        .bindTooltip(`${myState.visualizingProperty} :  ${myState.visualizingProperty} ${getPropertyUnit(myState.visualizingProperty)}`)
-        .bindPopup(popupDataForItemReplaced).addTo(map).openPopup()
+        .bindTooltip(`${myState.visualizingProperty} :  ${estimated.toFixed(2)} ${getPropertyUnit(myState.visualizingProperty)}`)
+        .bindPopup(popupDataForItemReplaced)
+        .addTo(map)
+        .openPopup()
 
     console.groupEnd()
 })
@@ -470,6 +465,7 @@ function clearMapLayers(map) {
  * points: array of points with the data to paint
  * */
 function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay = 'level') {
+    showPopup("Re-rendering map", "load")
 
     clearMapLayers(map)
 
@@ -481,9 +477,6 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
     console.log("Rendering map 🗺️ with center at", visCenter)
 
     map.setView([visCenter.lat, visCenter.lon])
-
-
-
 
     //This is the estimated center 
 
@@ -499,12 +492,22 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
     const layerGroupOrigin = L.layerGroup().addTo(map);
     sessions.forEach(s => {
+
+
+
+        //Get pi measurements (also order by most recent if there are several assigned to same session)
+        const piCorrectionPoints = points.filter(p =>
+            p.sessionId === s._id && p.measurementDevice === "RaspberryPi4B").sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+
+
         //DISPLAY ORIGINS
         let myOriginPainted = L.marker(s.worldPosition, {
             color: 'orange',
             fillOpacity: 0.5,
             radius: 0.5
-        }).bindPopup(`This is the origin for session ${s._id}`).addTo(layerGroupOrigin);
+        }).bindPopup(`This is the origin for session ${s._id} ${((piCorrectionPoints.length > 0) ? JSON.stringify(piCorrectionPoints) : "no pi measurements associated")}`)
+        .addTo(layerGroupOrigin);
+
 
         //add to list of layered info, so that re-rendering on change origin can move printed 
         layerGroupOrigin.addLayer(myOriginPainted)
@@ -514,6 +517,24 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
     layerGroups.push({ name: "sessionCenters", layer: layerGroupOrigin })
 
     const layerGroupOther = L.layerGroup().addTo(map);
+
+
+    //This should be done in a different way, like having the needed data already computed (e.g., lat, lon) -> Called world position
+    console.log("Computing bounding box of lat long")
+    const bbox = getLatLongBoundingBox(points.map(p => {
+        const ownOrigin = sessions.filter(s => s._id === p.sessionId)[0].worldPosition
+        const thisRoomAllCoordsAsLatLong = localToGeo(p.x, p.z, ownOrigin.lat, ownOrigin.lon)
+        return { lat: thisRoomAllCoordsAsLatLong.lat, lon: thisRoomAllCoordsAsLatLong.lon }
+    }))
+
+    // console.log("BBOX", bbox)
+    // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
+    // let imageBounds = [[bbox.minLat, bbox.minLon], [bbox.maxLat , bbox.maxLon]];
+    // L.imageOverlay(imageUrl, imageBounds).addTo(map);
+
+
+
+
     //Print  saved from phone into database
     points.forEach(c => {
         const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition // Get actual lat long origin for this point
@@ -539,14 +560,17 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             })
 
 
+        if (c.measurementDevice === "RaspberryPi4B") {
+            console.warn("HEY, this session has a raspberry pi measurement")
+            return
 
+        }
         //depending on what to display
-
         // CHECK that the property to be show in the visualization is in the coe
         if (!(whatToDisplay in c)) {
-            throw new Error(`unknown data attribute specified ${whatToDisplay} `)
-        }
+            // throw new Error(`unknown data attribute specified ${whatToDisplay} `)
 
+        }
 
 
         //Represents a measurement
@@ -568,6 +592,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
     console.log("POINTS (PRE HEATMAP)", points)
 
     //Heatmap things
+    showPopup("Creating heatmap points", "load")
 
     const knownPointsHeatmapReady = points.map(c => {
 
@@ -578,6 +603,8 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             ...localRoomCoordsAsLatLong, value: c.dbm
         }
     })
+
+
 
 
     // Generate many points in a radius that will be used for the point cloud
@@ -667,6 +694,9 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
         heatmapLayer._heatmap.configure({ radius: pixelRadius });
     });
     // console.log(map.layers)
+
+    hidePopup()
+
 }
 
 
@@ -676,38 +706,37 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
 
 
 
+// const TEST_ROOM = "office01";
+// let job = null
 
-const TEST_ROOM = "paci2";
-let job = null
+// document.querySelector(".ia-training-btn").addEventListener("click", async (ev) => {
+//     console.log("Training button clicked")
+//     job = await requestIATraining(TEST_ROOM)
 
-document.querySelector(".ia-training-btn").addEventListener("click", async (ev) => {
-    console.log("Training button clicked")
-    job = await requestIATraining(TEST_ROOM)
+//     alert("Training job started, check console for updates")
+//     alert(JSON.stringify(job))
+//     console.log("JOB ID", job)
 
-    alert("Training job started, check console for updates")
-    alert(JSON.stringify(job))
-    console.log("JOB ID", job)
+// })
 
-})
-
-document.querySelector(".ia-status-btn").addEventListener("click", async (ev) => {
-
-
-    const jobStatus = await requestTrainingJobStatus(job.job_id)
-
-    alert("Training job started, check console for updates")
-    alert(JSON.stringify(jobStatus))
-
-})
-document.querySelector(".ia-inference-btn").addEventListener("click", async (ev) => {
+// document.querySelector(".ia-status-btn").addEventListener("click", async (ev) => {
 
 
-    console.log("Inference button clicked")
-    const inference = await requestIAAPIReal(TEST_ROOM)
+//     const jobStatus = await requestTrainingJobStatus(job.job_id)
 
-    alert("Inference done check console for updates. Should be the image", inference)
+//     alert("Training job started, check console for updates")
+//     alert(JSON.stringify(jobStatus))
 
-})
+// })
+// document.querySelector(".ia-inference-btn").addEventListener("click", async (ev) => {
+
+
+//     console.log("Inference button clicked")
+//     const inference = await requestIAAPIReal(TEST_ROOM)
+
+//     alert("Inference done check console for updates. Should be the image", inference)
+
+// })
 
 
 
@@ -734,12 +763,3 @@ document.querySelector(".ia-inference-btn").addEventListener("click", async (ev)
 // }
 
 
-// Table showing all measurements
-
-const SESSIONS_DIV = document.querySelector(".tables.sessions")
-const MEASUREMENTS_DIV = document.querySelector(".tables.measurements")
-const ROOM_DIV = document.querySelector(".tables.room")
-
-showRoomAsTable(ROOM_DIV, myState.activeRoom)
-showSessionsAsTables(SESSIONS_DIV, myState.activeSessions)
-showMeasurementsAsTable(MEASUREMENTS_DIV, myState.activeMeasurements)

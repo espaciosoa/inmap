@@ -1,6 +1,7 @@
 :root {
     --header-base: #9ca859;
-    --border-color: #d1d5db;  /* Light gray */
+    --border-color: #d1d5db;
+    /* Light gray */
 
     box-sizing: border-box;
 
@@ -59,7 +60,7 @@ td {
 
 /* Table header */
 th {
-   
+
     padding: 1em;
     text-align: left;
     border: 1px solid white;
@@ -97,19 +98,62 @@ tbody tr:nth-child(even) {
 
 
 /* Used to debug the showing of objects recursively */
-.sos {
-    outline: red 1px solid;
+.inner-object {
+    outline: rgb(50, 205, 159) 1px solid;
+    border-radius: 12px;
     text-align: left;
-    /* padding: 0.2em; */
+    inset: 1px;
+    padding: 0.2em;
+    margin: 0.2em;
 }
 
 
-.editable-cell{
+.editable-cell {
+    input {
+        width: -webkit-fill-available;
+    }
+}
 
-    input{
-        width:-webkit-fill-available;
 
+.row-action-buttons {
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 0.1em;
+
+
+    button {
+        padding: 0.4em;
+        color: white;
+        background-color: steelblue;
+        font-size: small;
+        border-radius: 0.2em;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+        transition: background-color 0.3s ease;
     }
 
+    button:hover {
+        background-color: var(--header-base);
+    }
 
+}
+
+
+
+
+
+/* Validation styles */
+input.invalid {
+    border: 1px solid red;
+    background-color: #f8d7da;
+}
+
+input.valid {
+    border: 1px solid green;
+    background-color: #d4edda;
 }

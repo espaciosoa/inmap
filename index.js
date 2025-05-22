@@ -231,7 +231,7 @@ async function listUselessData(performDelete = false) {
 
 
   //Should check for unlinked sessions or measurements
-
+  raspberryPiMeasurementsProcessing()
 
 }
 
@@ -255,3 +255,108 @@ function askQuestion(question) {
 
 
 
+/**
+ * Implements the functionality of reassigning pi measurements to their closest session in time
+ */
+async function raspberryPiMeasurementsProcessing() {
+
+  //Read all unassigned sesssions
+  const unasignedPiMeasurements = await RoomMeasurement.find(
+    {
+      measurementDevice: "RaspberryPi4B",
+      measurementSession: "UNASSIGNED"
+    })
+
+
+  // console.log(unasignedPiMeasurements)
+  console.log(`FOUND ${unasignedPiMeasurements.length} unassigned Pi measurements`)
+  for (const piMeasurement of unasignedPiMeasurements) {
+
+
+
+    //get room 
+    const associatedRoom = await Room.findOne({ _id: piMeasurement.roomId })
+
+    console.log("Processing unassigned pi measurement", {
+      _id: piMeasurement._id, timestamp: piMeasurement.timestamp,
+      roomId:piMeasurement.roomId,
+      room: associatedRoom.name
+    })
+
+
+    console.log(`this measurement id for room ${associatedRoom.name}`)
+
+    // console.log(piMeasurement.timestamp || "found bad timestamp")
+    const referenceTimestamp = new Date(piMeasurement.timestamp);
+    console.log("REFERENCE TIMESTAMP", referenceTimestamp)
+    const twoHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    const lowerBound = new Date(referenceTimestamp.getTime() - twoHours);
+    const upperBound = new Date(referenceTimestamp.getTime() + twoHours);
+
+
+    console.log(`FINDING date for in range \n${lowerBound} \nand \n${upperBound}`)
+
+
+    //FILTER BY DATE 
+    const possibleAssignableSessionsResult = await MeasurementSession.aggregate([
+      {
+        $match: {
+          roomId: piMeasurement.roomId
+        }
+      },
+      //Transform string date to actual date in a new field generated on the fly
+      {
+        $addFields: {
+          timestampDate: { $toDate: "$timestamp" }
+        }
+      },
+
+      {
+        $addFields: {
+          timeDiffMilis: {
+            $abs: {
+              $subtract: ["$timestampDate", referenceTimestamp]
+            }
+          }
+        }
+      },
+      // Check date in bounds
+      {
+        $match: {
+          timestampDate: { $gte: lowerBound, $lt: upperBound }
+        }
+      },
+      //Order by lowest absolute difference in time
+      {
+        $sort: {
+          timeDiffMilis: 1 // -1 = descending, 1 = ascending
+        }
+      }
+    ])
+
+    console.log(`CANDIDATES FOUND ${possibleAssignableSessionsResult.length}`)
+    console.log("------------------------------")
+    console.log(possibleAssignableSessionsResult)
+    console.log("------------------------------")
+
+    //ASSIGNMENT OR SKIPPING
+    if (possibleAssignableSessionsResult.length < 1) {
+      console.log("NO CANDIDATES FOUND FOR THIS PI MEASUREMENT")
+      //probably should delete the unassigned 
+      await RoomMeasurement.deleteOne({_id:piMeasurement._id})
+      continue
+    }
+    // Assign to closest session in time
+    const result = await RoomMeasurement.findOneAndUpdate(
+      { _id: piMeasurement._id },
+      { $set: { measurementSession: possibleAssignableSessionsResult[0]._id } }, // update
+      { new: true }
+    );
+    console.log(`ASSIGNED PI MEASUREMENT ${piMeasurement._id} TO SESSION ${possibleAssignableSessionsResult[0]._id} `)
+    console.log(result)
+
+
+  }
+
+}
