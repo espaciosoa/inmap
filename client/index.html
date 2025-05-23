@@ -36,30 +36,28 @@
     <header class="header">
         <div>
             <img src="favicon.png">
-            <h1>Mapping client for 5G AR app </h1>
+            <h1> Measurements.espaciosoa | 5G measurements  </h1>
         </div>
         <form action="/logout" method="POST"> <button type="submit" class="logout-button"> Logout</button></form>
     </header>
     <main>
-
-
         <form class="what-to-plot-selection">
-            <div class="room-choose-container scrollable-max-size">
-                <label>Room visualization:</label>
+            <div class="border room-choose-container scrollable-max-size">
+                <label>Choose a room to visualize:</label>
                 <select data-dynamic="roomsSelect">
                     <option>Select a room to visualize</option>
                 </select>
             </div>
 
-            <ul class="session-choose scrollable-max-size" data-dynamic="sessions">
-                <li class="session-item design-only">
-                    <label>
-                        <span class="session-name">Example session</span>
-                    </label>
-                    <input type="checkbox" data-id="" />
-                </li>
-                <!--THIS IS FILLED DYNAMICALLY-->
-            </ul>
+            <div class="box-positioned border">
+                <header class="overlapping-box-header">Measured Sessions</header>
+                <div class="scrollable-max-size">
+                    <ul class="session-choose " data-dynamic="sessions">
+                        <!--THIS IS FILLED DYNAMICALLY-->
+                    </ul>
+                </div>
+            </div>
+
         </form>
 
 
@@ -68,17 +66,11 @@
             <!--THIS IS FILLED DYNAMICALLY-->
         </div>
 
-        <!-- <div class="heatmap-controls">
-            <button class="ia-training-btn"> Training </button>
-            <button class="ia-status-btn"> Check status </button>
-            <button class="ia-inference-btn"> Inference </button>
-        </div> -->
+
+
 
         <section class="grid-form-map">
-
             <div id="map">
-                <!-- <div class="map-disabled-overlay"></div> -->
-
                 <aside id="map-menu-overlay">
                     <h4>Property Visualized</h4>
                     <select id="property-select-menu">

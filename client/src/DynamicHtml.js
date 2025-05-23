@@ -79,9 +79,68 @@ export function showRoomsAsSelectOptions(selectItem, state, rooms, selected = un
 }
 
 
+/**
+ * Displays information about the room being currently displayed in the map
+ * @param {*} state 
+ */
+export function showStateInformationSection(state) {
+
+    //Showing in the page for which session I am showing info
+    const myDivTemplate = `<section class="currently-displaying"> 
+        <header>
+            <h2> Room: 
+                <span class="room-name">{{roomName}}</span>
+                <span class="room-id">{{roomId}}</span>
+            </h2>
+            <h3 > Session/s: </h3>
+                <div class="sessions-displayed-list"> 
+                    <!-- Dynamic filling (list of sessions being displayed)-->
+                <div class="sessions-displayed-list"> 
+        </header> 
+         <p> total measurements: {{measurements}} </p>  
+      </section>`
+
+
+    const sessionSpanTemplate = ` <span class="session-name">{{session}}</span> `
+
+    const allSessionSpansNodes = []
+    state.activeSessions.forEach(s => {
+        const sessionSpanTemplateFilled = JSUtils.replaceTemplatePlaceholders(sessionSpanTemplate, {
+            session: s._id
+        })
+
+        allSessionSpansNodes.push(JSUtils.txtToHTMLNode(sessionSpanTemplateFilled))
+    })
+
+
+
+    const myStateSummary = JSUtils.replaceTemplatePlaceholders(myDivTemplate, {
+        roomName: `${state.activeRoom.name}`,
+        roomId: `${state.activeRoom._id}`,
+        measurements: state.activeMeasurements.length
+    })
+
+
+
+
+    const measurementsContainer = document.querySelector("#measurements")
+
+    const myStateSummaryAlmostFilled = JSUtils.txtToHTMLNode(myStateSummary)
+    const sessionsContainer = myStateSummaryAlmostFilled.querySelector(".sessions-displayed-list")
+
+    sessionsContainer.replaceChildren(...allSessionSpansNodes)
+    measurementsContainer.replaceChildren(myStateSummaryAlmostFilled)
+
+}
+
+
+
 
 //For a given array of sessions, shows them as checkboxes
 export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = []) {
+
+    console.groupCollapsed("showSessionsAsCheckboxes")
+
 
     const option_HTML_Template = `<li class="session-item">
             <label class="bold" >
@@ -223,6 +282,9 @@ function createTableFromObject(data, lastKey = "", opts = {
     validateValues: null,
 
 }) {
+
+    console.groupCollapsed("createTableFromObject")
+
     const elem = document.createElement("div");
     elem.classList.add("inner-object");
 
@@ -293,6 +355,8 @@ function createTableFromObject(data, lastKey = "", opts = {
 
         elem.appendChild(kvItemHTML);
     }
+
+    console.groupEnd()
 
     return elem;
 }
@@ -458,19 +522,17 @@ function createTableFromArray(data,
     table.appendChild(tbody);
     tableWrapper.appendChild(table)
 
+    console.groupEnd()
+
+
     return tableWrapper;
 }
 
 
 
 
-
-
-
-
-
 // ACTUALLY SHOWING THE TABLES
-export function showMeasurementsAsTable(parent, measurements) {
+export function showMeasurementsAsTable(parent, measurements, refetchLogic) {
     const measurementsCopy = structuredClone(measurements)
 
     parent.replaceChildren(
@@ -479,6 +541,20 @@ export function showMeasurementsAsTable(parent, measurements) {
             //Parameters for the table
             {
                 editableKeys: ["lat", "lon"],
+                handleSave: async (obj) => {
+                    alert(`TODO MEASUREMENTS PUT`)
+                    //Replace me with just fetching
+                    await refetchLogic()
+                    // window.location.reload(true);
+                },
+                handleDelete: async (obj) => {
+
+                    //SHOW MODAL HERE
+                    alert(`TODO MEASUREMENTS DELETE`)
+                    await refetchLogic()
+                    // window.location.reload(true);
+
+                }
             } //Parameters for the table
         ))
         ;
@@ -491,6 +567,9 @@ export function showRoomAsTable(parent, room) {
     parent.replaceChildren(
         createTableFromArray(
             [roomCopy],
+            {
+                editable: false
+            }
             //Parameters for the table
             // {
             //     editable: true,
@@ -510,7 +589,7 @@ function safeParseFloat(val) {
     return Number.isNaN(parsed) ? null : parsed;
 }
 
-export function showSessionsAsTables(parent, sessions) {
+export function showSessionsAsTables(parent, sessions, refetchLogic) {
     const sessionsCopy = structuredClone(sessions)
     parent.replaceChildren(
         createTableFromArray(
@@ -542,8 +621,8 @@ export function showSessionsAsTables(parent, sessions) {
                     alert(`Session saved ${result.success} ${result.data} ${result.data.message}`)
 
                     //Replace me with just fetching
-                    window.location.reload(true);
-
+                    await refetchLogic()
+                    // window.location.reload(true);
 
                 },
                 handleDelete: async (obj) => {
@@ -552,7 +631,8 @@ export function showSessionsAsTables(parent, sessions) {
                     const result = await deleteSession(obj._id)
                     //SHOW MODAL HERE
                     alert("Session deleted")
-                    window.location.reload(true);
+                    await refetchLogic()
+                    // window.location.reload(true);
 
                 }
 

@@ -185,24 +185,52 @@ a:visited {
 }
 
 
-.currently-displaying {}
 
-
+.border {
+    border: solid 1px white;
+    border-radius: 1em;
+}
 
 .scrollable-max-size {
     max-height: 20vh;
-    border: solid 1px white;
-    border-radius: 1em;
-
     overflow-y: scroll;
     scrollbar-width: 0;
     scrollbar-color: transparent;
 
 }
 
+.scrollable-max-size::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+}
+
+
+
+.box-positioned {
+    position: relative
+}
+
+.overlapping-box-header {
+    position: absolute;
+    z-index: 10;
+    top: 0%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    /*Styles of the box itself */
+    padding: 0.2em 2em;
+    border-radius: 12px;
+    background-color: rgb(28, 87, 135);
+}
+
+
 
 .room-choose-container.room-choose-container {
     align-items: center;
+
+    select {
+        max-width: 90%;
+    }
 }
 
 .what-to-plot-selection>* {
@@ -257,10 +285,12 @@ input[type="checkbox"] {
 
 
 select {
-
     padding: 0.2em 1em;
     border: #3D3D3D;
+
+
 }
+
 
 
 
@@ -363,7 +393,9 @@ select {
     position: relative;
 }
 
-.map-disabled-overlay {
+
+
+.div-overlay {
     position: absolute;
     background-color: #3D3D3D;
     opacity: 0.5;
@@ -371,8 +403,15 @@ select {
     right: 0;
     left: 0;
     bottom: 0;
-
     z-index: 50000;
+}
+
+.map-disabled-overlay {
+
+    display: grid;
+    align-items: center;
+    justify-items: center;
+   
 }
 
 
