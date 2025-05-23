@@ -209,18 +209,94 @@ let visualizationCenter = {
 
 
 
+
+const MAP_PROVIDERS = {
+    openstreetmap: {
+        urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        options: {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }
+    },
+    arcgis: {
+        urlTemplate: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        options: {
+            attribution: 'Tiles &copy; Esri'
+        }
+    },
+    mapbox: {
+        urlTemplate: "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+        options: {
+            attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+            id: 'mapbox/light-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: "pk.eyJ1IjoiYWxyZXlsIiwiYSI6ImNsZDY5YzR1ajBkcGQ0MXBsdWgzem90aHQifQ.jbSFWt0Q8y_DZRYBUNiKrA",
+        },
+        mapboxStyles: {
+            streets: "mapbox/streets-v12",
+            outdoors: "mapbox/outdoors-v12",
+            light: "mapbox/light-v11",
+            dark: "mapbox/dark-v11",
+            satellite: "mapbox/satellite-v9",
+            satelliteStreets: "mapbox/satellite-streets-v12",
+            navigationDay: "mapbox/navigation-day-v1",
+            navigationNight: "navigation-night-v1"
+        }
+    },
+    cartoDB: {
+        urlTemplate: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        options: {
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+        }
+    }
+
+
+
+}
+
+
 // Init map
-const map = L.map('map').setView([visualizationCenter.lat, visualizationCenter.lon], 19);
 let layerGroups = []
-const tiles = L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        maxZoom: 21,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+
+
+const baseMaps = {}
+for (const [providerName, config] of Object.entries(MAP_PROVIDERS)) {
+
+    if (providerName !== "mapbox") {
+        baseMaps[`${providerName}`] = L.tileLayer(
+            config.urlTemplate,
+            {
+                ...config.options,
+                maxZoom: 30
+            })
+    }
+    else {
+
+        for (const [variationName, styleUrl] of Object.entries(config.mapboxStyles)) {
+            console.log(`${variationName}, ${styleUrl}`)
+            baseMaps[`${providerName}-${variationName}`] = L.tileLayer(
+                config.urlTemplate,
+                {
+                    ...config.options,
+                    id: styleUrl,
+                    maxZoom: 30
+                })
+        };
+
+    }
+
+}
 
 
 
+
+console.log("BASE TILES AVAILABLE", baseMaps)
+const map = L.map('map').setView([visualizationCenter.lat, visualizationCenter.lon], 19);
+//SET DEFAULT BASE TILE
+baseMaps.openstreetmap.addTo(map);
+//Allow changing between providers
+L.control.layers(baseMaps).addTo(map);
 
 
 
@@ -506,7 +582,7 @@ function renderMap(map, visCenter, sessions, points, rotation = 0, whatToDisplay
             fillOpacity: 0.5,
             radius: 0.5
         }).bindPopup(`This is the origin for session ${s._id} ${((piCorrectionPoints.length > 0) ? JSON.stringify(piCorrectionPoints) : "no pi measurements associated")}`)
-        .addTo(layerGroupOrigin);
+            .addTo(layerGroupOrigin);
 
 
         //add to list of layered info, so that re-rendering on change origin can move printed 
