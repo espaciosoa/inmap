@@ -491,10 +491,6 @@ function createTableFromArray(data,
         if (opts.editableKeys && opts.editableKeys.length > 0) {
 
 
-
-
-
-
             const replacements = {
                 saveText: "Save 💾",
                 deleteText: "Delete 🗑️",

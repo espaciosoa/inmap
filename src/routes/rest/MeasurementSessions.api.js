@@ -142,9 +142,6 @@ router.delete("/:id", [authMiddleware], async (req, res) => {
 
   const existingSession = await MeasurementSession.findOne({ _id: id })
 
-
-
-
   if (!existingSession) {
     return res.status(404).json({
       success: false,

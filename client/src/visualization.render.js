@@ -49,14 +49,15 @@ export function renderMap(map,
 
     //1. Show visually the estimated centroid of all measured points    
     //This is the estimated center 
-    let center = L.circle(visCenter, {
-        color: 'black',
-        fillOpacity: 1,
-        radius: 0.5
-    })
-        .bindPopup(`Estimated visualization center:  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
+    // let center = L.circle(visCenter, {
+    //     color: 'black',
+    //     fillOpacity: 1,
+    //     radius: 0.5
+    // })
+    //     .bindPopup(`Estimated visualization center:  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
 
-    layerGroups.push({ name: "Estimated visualization center", layer: center })
+
+    // layerGroups.push({ name: "Estimated visualization center", layer: center })
 
 
     const layerGroupOrigin = L.layerGroup().addTo(map);
@@ -68,18 +69,85 @@ export function renderMap(map,
             p.sessionId === s._id && p.measurementDevice === "RaspberryPi4B").sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
 
+
+
+
+
+
+        //I need to create a button only if there are pi-measurements
+        const PI_CORRECTION_BUTTON_HTML_TEMPLATE = `
+        <div > 
+            <button 
+                type="button" 
+                tooltip={{tooltip}}
+                onClick={{action}}> 
+                {{label}}
+            </button>
+        </div>
+        `
+
+        const buttonTemplateReplacements = {
+            label: "Session info",
+            tooltip: "Perform corrections based on the estimated value using a raspberry Pi",
+            action: () => { alert("This is a button ") }
+        }
+
+        const buttonDOMNode = JSUtils.
+            replaceTemplatePlaceholdersAndBindHandlers(PI_CORRECTION_BUTTON_HTML_TEMPLATE,
+                buttonTemplateReplacements
+            );
+
+
+        const SESSION_INFO_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">  
+                                                    <header > 
+                                                        <h4>{{title}}</h4>
+                                                    </header>
+
+
+                                                    
+                                                    {{popupButtons}}
+                                                    <footer>
+                                                        <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
+                                                    </footer>
+
+                                                </div>`
+
+
+        const replacements = {
+            title: "Session info",
+            timestamp: getNaturalLanguageDate(s.timestamp),
+            popupButtons: buttonDOMNode,
+            actions: () => { alert("Clicked ") }
+        }
+
+
+        // I can mix this in a single call probably
+        const popupSession = JSUtils.txtToHTMLNode(
+            JSUtils.replaceTemplatePlaceholders(SESSION_INFO_POPUP_HTML_TEMPLATE,
+                replacements
+            )
+        )
+        JSUtils.bindHandlers(popupSession, replacements)
+
+
+
+
+
+
+
         //DISPLAY ORIGINS
         let myOriginPainted = L.marker(s.worldPosition, {
             color: 'orange',
             fillOpacity: 0.5,
             radius: 0.5
-        }).bindPopup(`This is the origin for session ${s._id} ${((piCorrectionPoints.length > 0) ? JSON.stringify(piCorrectionPoints) : "no pi measurements associated")}`)
+        })
+            .bindPopup(popupSession)
+            // .bindPopup(`
+            //     This is the origin for session ${s._id} ${((piCorrectionPoints.length > 0) ? JSON.stringify(piCorrectionPoints) : "no pi measurements associated")}
+            //     `)
             .addTo(layerGroupOrigin);
-
-
         //add to list of layered info, so that re-rendering on change origin can move printed 
         layerGroupOrigin.addLayer(myOriginPainted)
-
     })
 
     //add to layers for then removal

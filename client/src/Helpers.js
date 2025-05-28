@@ -49,14 +49,25 @@ export default class JSUtils {
      *         });
      */
     static replaceTemplatePlaceholders(template, replacements) {
-        // First, handle attributes like onClick={{handlerName}}
+
+        // First, handle attributes like 'onEVENT'  e.g., onClick={{handlerName}} appearing in the template
         const eventAttrRegex = /(on\w+)={{(.*?)}}/g;
 
+        // Replaces in the template appearances of 'onEVENT' 
+        // to custom attributes in elements like the following: 
+        // <button onClick={{handler}} />
+        // becomes
+        // <button data-event-onclick="handler" />
         template = template.replace(eventAttrRegex, (_, eventAttrName, handlerName) => {
             const trimmedHandlerName = handlerName.trim();
-            const eventNameLower = eventAttrName.toLowerCase(); // onChange -> onchange
+            const eventNameLower = eventAttrName.toLowerCase();
             return `data-event-${eventNameLower}="${trimmedHandlerName}"`;
         });
+
+
+
+
+
 
         // Now handle plain text placeholders {{buttonText}}
         const placeholderRegex = /{{(.*?)}}/g;
@@ -67,37 +78,21 @@ export default class JSUtils {
             if (typeof toReplaceValue === "function") {
                 console.warn(`Warning: trying to inject a function into text at {{${trimmedName}}}. Ignoring.`);
                 return "";
-            } else {
+            }
+            //Added support for HTML nodes using replace
+            else if (toReplaceValue instanceof HTMLDivElement) {
+                // The node should be appended a posteriori
+                return `<div data-replaceme="${trimmedName}"> THIS DIV WILL DISSAPEAR AFTER REPLACEMENT WITH INNER CHILD </div>`
+            }
+            else {
                 return toReplaceValue ?? "";
+
+
             }
         });
+
     }
 
-    // static bindHandlers(context, replacements) {
-
-
-
-    //     context.querySelectorAll('[data-event-onclick], [data-event-onchange], [data-event-oninput], [data-event-onsubmit]').forEach(el => {
-    //         Array.from(el.attributes).forEach(attr => {
-    //             if (attr.name.startsWith('data-event-')) {
-    //                 const eventType = attr.name.replace('data-event-on', ''); // 'onclick' -> 'click'
-    //                 const handlerName = attr.value;
-    //                 const handler = replacements[handlerName];
-
-    //                 console.log(`Binding handler ${handlerName} to event ${eventType} on element`, el);
-
-    //                 if (typeof handler === 'function') {
-    //                     el.addEventListener(eventType, handler);
-    //                 } else {
-    //                     console.warn(`Handler "${handlerName}" not found in replacements`);
-    //                 }
-
-    //                 // Optionally: Clean up
-    //                 // el.removeAttribute(attr.name);
-    //             }
-    //         });
-    //     });
-    // }
 
     static bindHandlers(context, replacements) {
         const allElements = [context, ...context.querySelectorAll('*')]; // Include context itself and all its descendants
@@ -117,10 +112,36 @@ export default class JSUtils {
                     }
 
                     // Optionally clean:
-                     el.removeAttribute(attr.name);
+                    el.removeAttribute(attr.name);
+                }
+                //Added support to replace HTML NODES in templates
+                else if (attr.name.startsWith('data-replaceme')) {
+
+                    console.log(`Substituting HTMLNode in template `, el);
+                    const templateStringName = attr.value.trim();
+
+                    const HTMLDOMElem = replacements[templateStringName]
+
+                    console.log("HTML DOM ELEMENT TO be inserted ", HTMLDOMElem)
+                    el.replaceWith(HTMLDOMElem)
+
                 }
             });
         });
+    }
+
+
+
+    // This function combines in a single step both template filling and function binding 
+    // returns a new dom element with the subscribed things
+    static replaceTemplatePlaceholdersAndBindHandlers(template, replacements) {
+
+        // 1- TXT replace {{vars}} with actual text and "annotate" elements to later be able to attach to them a handler 
+        const newDOMElement = this.txtToHTMLNode(JSUtils.replaceTemplatePlaceholders(template, replacements))
+        // 2- Assign the handlers at runtime once the DOM Node exists.
+        this.bindHandlers(newDOMElement, replacements)
+
+        return newDOMElement
     }
 
     static isString(x) {
