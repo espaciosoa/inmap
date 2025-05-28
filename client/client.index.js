@@ -158,7 +158,7 @@ myState.subscribe("onChangeState", (state) => {
     console.log("📶 MEASUREMENTS ", state.activeMeasurements)
     console.groupEnd()
 
-    renderMap(map, visualizationCenter, state.activeSessions, state.activeMeasurements.map(toMapPointsMapper))
+    renderMap(map, visualizationCenter, state.activeSessions, state.activeMeasurements)
 })
 
 let visualizationCenter = {
@@ -220,7 +220,7 @@ if (
         map,
         visualizationCenter,
         myState.activeSessions,
-        myState.activeMeasurements.map(toMapPointsMapper),
+        myState.activeMeasurements,
         0,
         myState.visualizingProperty
     )
@@ -301,7 +301,7 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 myState.subscribe("onVisualizedPropertyChanged", (property) => {
     // renderMap(map, visualizationCenter,
     //     myState.activeSessions,
-    //     myState.activeMeasurements.map(toMapPointsMapper),
+    //     myState.activeMeasurements,
     //     0,
     //     property
     // )

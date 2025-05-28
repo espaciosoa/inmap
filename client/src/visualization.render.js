@@ -24,6 +24,63 @@ function clearMapLayers(map) {
     layerGroups = []
 }
 
+
+// I should probably get different data from the Raspberry to use
+const toMapPointsMapper = (measurement) => {
+
+    //We want to treat differently the measurements made with the raspberry
+    if ("measurementDevice" in measurement
+        && measurement.measurementDevice === "RaspberryPi4B"
+    ) {
+
+        //Extract the bare basics
+        const adaptedMeasurementObject = {
+            _id: measurement._id,
+            // position: { ...measurement.position },
+            timestamp: measurement.timestamp,
+            sessionId: measurement.measurementSession,
+            measurementDevice: measurement.measurementDevice
+
+        }
+
+        const originalAllMeasurements = measurement.allMeasurements
+
+
+        const FILTER_TECH = "LTE";
+
+        console.log("PROCESSING PI MEASUREMENT LOOKING LIKE THIS", originalAllMeasurements)
+
+        //Decompose 
+        // adaptedMeasurementObject.fullCellSignalStrength = {}
+        //rssi
+        adaptedMeasurementObject.rssi = originalAllMeasurements.signalStrength.rssi;
+        adaptedMeasurementObject.channelBitErrorRate = originalAllMeasurements.signalStrength.channelBitErrorRate;
+        //TODO!
+        //Careful if it returns an array because it means there are several technologies . Get prx
+        adaptedMeasurementObject.qrsrp = (originalAllMeasurements?.qrsrp.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
+        adaptedMeasurementObject.qrsrq = (originalAllMeasurements?.qrsrq.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
+        adaptedMeasurementObject.sinr = (originalAllMeasurements?.sinr.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
+        //Cell info
+        adaptedMeasurementObject.cellInfo = { ...(originalAllMeasurements.cells.filter((elem) => elem.accessTechnology === FILTER_TECH))?.[0] } && "Unsupported cell (NOT 5G or 4G)"
+
+
+        return adaptedMeasurementObject
+
+    }
+
+    return {
+        _id: measurement._id,
+        ...measurement.position,
+        ...measurement.fullCellSignalStrength,
+        ...measurement.fullCellIdentity,
+        timestamp: measurement.timestamp,
+        sessionId: measurement.measurementSession,
+        measurementDevice: measurement.measurementDevice || "ANDROID_PHONE"
+    }
+}
+
+
+
 /**
  * `map`: the leaflet map object in which I want to show overlays with my data
  * `visCenter`: {lat:X, long:Y} object where the map will have its center
@@ -36,12 +93,19 @@ export function renderMap(map,
     rotation = 0,
     whatToDisplay = 'level') {
 
+
+
+
+
     showPopup("Re-rendering map", "load")
 
     clearMapLayers(map)
 
-    if (!points)
+    if (!points || !sessions)
         return
+
+    //This reformats the points to have a common interface (kinda)
+    points = points.map(toMapPointsMapper)
 
     console.log("Rendering map 🗺️ with center at", visCenter)
 
@@ -70,13 +134,19 @@ export function renderMap(map,
 
 
 
+        console.log("PI_CORRECTION_POINTS", piCorrectionPoints[0] ?? "none")
 
 
 
 
         //I need to create a button only if there are pi-measurements
-        const PI_CORRECTION_BUTTON_HTML_TEMPLATE = `
-        <div > 
+        const PI_CORRECTION_SECTION_HTML_TEMPLATE = `
+        <div class="pi-correction"> 
+
+            <p>
+                {{pi_details}}
+            </p>    
+
             <button 
                 type="button" 
                 tooltip={{tooltip}}
@@ -86,15 +156,16 @@ export function renderMap(map,
         </div>
         `
 
-        const buttonTemplateReplacements = {
+        const PiMeasurementsTemplateReplacements = {
             label: "Session info",
+            pi_details: JSON.stringify(piCorrectionPoints[0]),
             tooltip: "Perform corrections based on the estimated value using a raspberry Pi",
             action: () => { alert("This is a button ") }
         }
 
         const buttonDOMNode = JSUtils.
-            replaceTemplatePlaceholdersAndBindHandlers(PI_CORRECTION_BUTTON_HTML_TEMPLATE,
-                buttonTemplateReplacements
+            replaceTemplatePlaceholdersAndBindHandlers(PI_CORRECTION_SECTION_HTML_TEMPLATE,
+                PiMeasurementsTemplateReplacements
             );
 
 
@@ -102,9 +173,6 @@ export function renderMap(map,
                                                     <header > 
                                                         <h4>{{title}}</h4>
                                                     </header>
-
-
-                                                    
                                                     {{popupButtons}}
                                                     <footer>
                                                         <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
@@ -116,21 +184,16 @@ export function renderMap(map,
         const replacements = {
             title: "Session info",
             timestamp: getNaturalLanguageDate(s.timestamp),
-            popupButtons: buttonDOMNode,
+            popupButtons: piCorrectionPoints.length > 0 ? buttonDOMNode : " No raspbi measurements available for this session",
             actions: () => { alert("Clicked ") }
         }
 
 
         // I can mix this in a single call probably
-        const popupSession = JSUtils.txtToHTMLNode(
-            JSUtils.replaceTemplatePlaceholders(SESSION_INFO_POPUP_HTML_TEMPLATE,
+        const popupSession = JSUtils.
+            replaceTemplatePlaceholdersAndBindHandlers(SESSION_INFO_POPUP_HTML_TEMPLATE,
                 replacements
             )
-        )
-        JSUtils.bindHandlers(popupSession, replacements)
-
-
-
 
 
 
@@ -157,16 +220,20 @@ export function renderMap(map,
 
 
     //This should be done in a different way, like having the needed data already computed (e.g., lat, lon) -> Called world position
-    console.log("Computing bounding box of lat long")
-    const bbox = getLatLongBoundingBox(points.map(p => {
-        const ownOrigin = sessions.filter(s => s._id === p.sessionId)[0].worldPosition
-        const thisRoomAllCoordsAsLatLong = localToGeo(p.x, p.z, ownOrigin.lat, ownOrigin.lon)
-        return { lat: thisRoomAllCoordsAsLatLong.lat, lon: thisRoomAllCoordsAsLatLong.lon }
-    }))
+    // console.log("Computing bounding box of lat long")
+    //TODO HERE : Plotting actual bounding box
+    // const nonPiMeasurementPoints = points.filter((p) => p.measurementDevice !== "RaspberryPi4B")
+
+    // console.log("nonPiMeasurements", nonPiMeasurementPoints)
+    // const bbox = getLatLongBoundingBox(nonPiMeasurementPoints.map(p => {
+    //     const ownOrigin = sessions.filter(s => s._id === p.sessionId)[0].worldPosition
+    //     const thisRoomAllCoordsAsLatLong = localToGeo(p.x, p.z, ownOrigin.lat, ownOrigin.lon)
+    //     return { lat: thisRoomAllCoordsAsLatLong.lat, lon: thisRoomAllCoordsAsLatLong.lon }
+    // }))
 
     // console.log("BBOX", bbox)
     // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
-    // let imageBounds = [[bbox.minLat, bbox.minLon], [bbox.maxLat , bbox.maxLon]];
+    // let imageBounds = [[bbox.minLat, bbox.minLon], [bbox.maxLat, bbox.maxLon]];
     // L.imageOverlay(imageUrl, imageBounds).addTo(map);
 
 
@@ -174,7 +241,11 @@ export function renderMap(map,
 
     //Print  saved from phone into database
     points.forEach(c => {
-        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition // Get actual lat long origin for this point
+        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0]?.worldPosition ?? null// Get actual lat long origin for this point
+
+        if (!ownOrigin)
+            return
+
 
         const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, ownOrigin.lat, ownOrigin.lon)
         const latLongCoords = rotation === undefined ?
@@ -234,6 +305,7 @@ export function renderMap(map,
     const knownPointsHeatmapReady = points.map(c => {
 
         const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition // Get actual lat long origin for this point
+
 
         const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, ownOrigin.lat, ownOrigin.lon)
         return {
