@@ -141,6 +141,25 @@ tbody tr:nth-child(even) {
         background-color: var(--header-base);
     }
 
+
+
+    button[disabled] {
+        background-color: grey;
+        /* filter:opacity(10%); */
+        position: relative;
+    }
+
+    button[disabled]:hover::after {
+        position: absolute;
+        content: "🚫 Not supported";
+        padding:0.2em;
+        top: -50%;
+        left: 50%;
+        background-color: white;
+        border-radius: 12px;
+        color: black;
+    }
+
 }
 
 

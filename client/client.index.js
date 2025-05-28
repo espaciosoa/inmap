@@ -70,7 +70,7 @@ catch (error) {
 // SUPER IMPORTANT
 // FETCHING  FUNCTIONS
 const fetchMeasurementsIntoState = async () => {
-    showPopup("Loading measurements", "load")
+    showPopup("Loading measurements...", "load")
     const activeSessionIds = myState.activeSessions.map(s => s._id)
     const measurementArrays = await Promise.all(
         activeSessionIds.map(sessionId =>
@@ -82,7 +82,7 @@ const fetchMeasurementsIntoState = async () => {
 }
 
 const fetchSessionsIntoState = async () => {
-    showPopup("Loading sessions", "load")
+    showPopup("Loading sessions...", "load")
     const associatedSessionsFromEndpoint = (await getSessionsForRoom(myState.activeRoom._id)).data
     myState.activeSessions = associatedSessionsFromEndpoint
     hidePopup()

@@ -1,10 +1,9 @@
 
-// const API_BASE_URL = "https://test.alreylz.me/v1/API/"
 const API_BASE_URL = "https://127.0.0.1:8443/v1/API/"
-
+const AUTH_TOKEN  ="WEDONTUSETOKENSAROUNDHERE"
 
 export async function getMeasurements() {
-    const response = await fetch(API_BASE_URL + "RoomMeasurements", {
+    const response = await fetch(API_BASE_URL + "roomMeasurements", {
         method: "GET",
     });
 
@@ -14,7 +13,7 @@ export async function getMeasurements() {
 
 
 export async function getSessions() {
-    const response = await fetch(API_BASE_URL + "MeasurementSessions", {
+    const response = await fetch(API_BASE_URL + "measurementSessions", {
         method: "GET",
     });
     return await response.json();
@@ -24,7 +23,7 @@ export async function getSessions() {
 
 // WORKING ON THESE TWO IN THE FRONT
 export async function getSessionsForRoom(roomId) {
-    const response = await fetch(API_BASE_URL + `MeasurementSessions/query?roomId=${roomId}`, {
+    const response = await fetch(API_BASE_URL + `measurementSessions/query?roomId=${roomId}`, {
         method: "GET",
     });
     
@@ -58,7 +57,7 @@ export async function putSession(session) {
 
     const sessionCopy = { ...session };
     delete sessionCopy._id;
-    const response = await fetch(API_BASE_URL + `MeasurementSessions/${session._id}`, {
+    const response = await fetch(API_BASE_URL + `measurementSessions/${session._id}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -70,9 +69,28 @@ export async function putSession(session) {
 }
 
 
-export async function deleteSession(sessionId) {
-    const response = await fetch(API_BASE_URL + "MeasurementSessions/" + sessionId, {
+
+export async function deleteMeasurement(measurementId) {
+
+    const headers = { 'Authorization': AUTH_TOKEN };
+
+    const response = await fetch(API_BASE_URL + "roomMeasurements/" + measurementId, {
         method: "DELETE",
+        headers: headers
+        
+    });
+    return await response.json();
+}
+
+
+
+export async function deleteSession(sessionId) {
+
+    const headers = { 'Authorization': AUTH_TOKEN };
+    
+    const response = await fetch(API_BASE_URL + "measurementSessions/" + sessionId, {
+        method: "DELETE",
+        headers: headers
     });
     return await response.json();
 }

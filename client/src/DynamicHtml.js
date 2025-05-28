@@ -1,7 +1,7 @@
 
 import JSUtils from "./Helpers.js";
 import { getNaturalLanguageDate } from "/src/converters.js";
-import { putSession, deleteSession } from "./requests.js";
+import { putSession, deleteSession, deleteMeasurement } from "./requests.js";
 import { validateLat, validateLong } from "./geo.utils.js";
 
 function isObject(item) {
@@ -490,19 +490,27 @@ function createTableFromArray(data,
         // Add buttons per row
         if (opts.editableKeys && opts.editableKeys.length > 0) {
 
+
+
+
+
+
             const replacements = {
                 saveText: "Save 💾",
                 deleteText: "Delete 🗑️",
                 // Passed as parameters to the function
                 handleSave: () => opts.handleSave(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) },
-                handleDelete: () => opts.handleDelete(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) }
-
+                handleDelete: () => opts.handleDelete(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) },
+                //Chapuza para desactivar edición o eliminado condicionalmente según si se pasa o  no un handler
+                enabledSave: opts.handleSave !== null ? "" : "disabled",
+                enabledDelete: opts.handleDelete !== null ? "" : "disabled"
             }
+
 
             const templateButtons = `<td>
             <div class="row-action-buttons">
-                <button class="btn" onClick={{handleSave}} > {{saveText}}  </button>
-                <button class="btn" onClick={{handleDelete}} > {{deleteText}}  </button>
+                <button class="btn" onClick={{handleSave}}  {{enabledSave}}> {{saveText}}  </button>
+                <button class="btn" onClick={{handleDelete}} {{enabledDelete}} > {{deleteText}}  </button>
             </div>
             </td>
             `
@@ -541,16 +549,27 @@ export function showMeasurementsAsTable(parent, measurements, refetchLogic) {
             //Parameters for the table
             {
                 editableKeys: ["lat", "lon"],
-                handleSave: async (obj) => {
-                    alert(`TODO MEASUREMENTS PUT`)
-                    //Replace me with just fetching
-                    await refetchLogic()
-                    // window.location.reload(true);
-                },
+                handleSave: null,
+                // Old 
+                // async (obj) => {
+                //     alert(`TODO MEASUREMENTS PUT`)
+                //     //Replace me with just fetching
+
+                //     await refetchLogic()
+                //     // window.location.reload(true);
+                // },
                 handleDelete: async (obj) => {
 
+                    const confirmed = window.confirm("Are you sure you want to proceed?")
+
+                    if (!confirmed)
+                        return
+
                     //SHOW MODAL HERE
-                    alert(`TODO MEASUREMENTS DELETE`)
+                    const deleteResult = await deleteMeasurement(obj._id)
+
+                    window.alert(`${JSON.stringify(deleteResult)}`)
+
                     await refetchLogic()
                     // window.location.reload(true);
 
@@ -618,7 +637,7 @@ export function showSessionsAsTables(parent, sessions, refetchLogic) {
                     //SHOW MODAL HERE
                     const result = await putSession(obj)
 
-                    alert(`Session saved ${result.success} ${result.data} ${result.data.message}`)
+                    alert(`Session '${obj._id}' saved : ${result.success} | ${JSON.stringify(result.data)} ${result.data.message ?? ""}`)
 
                     //Replace me with just fetching
                     await refetchLogic()
@@ -626,6 +645,12 @@ export function showSessionsAsTables(parent, sessions, refetchLogic) {
 
                 },
                 handleDelete: async (obj) => {
+
+
+                    const confirmed = window.confirm("Are you sure you want to proceed?")
+
+                    if (!confirmed)
+                        return
 
                     //SHOW MODAL HERE
                     const result = await deleteSession(obj._id)

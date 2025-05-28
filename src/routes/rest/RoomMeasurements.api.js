@@ -2,9 +2,9 @@ const express = require('express')
 const router = express.Router()
 const { isEmptyObject } = require("../../shared/basic.validation")
 const { v4: uuidv4 } = require('uuid');
+const { authMiddleware } = require('./middlewares/Middlewares.md');
 
-
-const { RoomMeasurement } = require("../../model/allModels")
+const { RoomMeasurement, MeasurementSession } = require("../../model/allModels")
 
 // Define routes for all REST methods
 router.get('/', async (req, res) => {
@@ -122,6 +122,52 @@ router.post('/', async (req, res) => {
 });
 
 
+router.delete("/:id", [authMiddleware], async (req, res) => {
+
+  const id = req.params.id;
+
+  const existingMeasurement = await RoomMeasurement.findOne({ _id: id })
+
+  if (!existingMeasurement) {
+    return res.status(404).json({
+      success: false,
+      message: `Measurement with _id: ${id} does not exist`,
+    })
+  }
+
+  try {
+
+
+    const associatedSession = await MeasurementSession.findOne({ _id: existingMeasurement.measurementSession })
+
+
+    const remainingMeasurementsForSession = await RoomMeasurement.countDocuments({ measurementSession: associatedSession._id })
+
+    if (remainingMeasurementsForSession == 1) {
+      const emptySessionDeleteResult = associatedSession.deleteOne()
+      console.log(`Deleted session with id: '${associatedSession_id}' as it would become empty|  result : ${emptySessionDeleteResult}`)
+
+    }
+
+    //Delete the measurement
+    const measurementDeletionResult = await existingMeasurement.deleteOne()
+    console.log(`Deleted  measurement ${id} associated to session ${associatedSession._id} | result : ${measurementDeletionResult}`)
+
+    return res.status(200).json({
+      success: true,
+      data: "Successfully deleted",
+      deletedId: id
+    })
+
+  }
+  catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `Something went wrong in the server. ${err.message}`
+    })
+
+  }
+})
 
 
 // Catch-all route for unsupported methods
