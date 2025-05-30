@@ -10,6 +10,9 @@ import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox
 import { getNaturalLanguageDate } from "./converters.js"
 import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "../../dist/crap.js"
 
+import { SwitchComponent } from "./components/switch.component.js"
+
+
 const [showPopup, hidePopup] = initPopup()
 
 
@@ -36,7 +39,7 @@ const toMapPointsMapper = (measurement) => {
         //Extract the bare basics
         const adaptedMeasurementObject = {
             _id: measurement._id,
-            // position: { ...measurement.position },
+            ...measurement.position,
             timestamp: measurement.timestamp,
             sessionId: measurement.measurementSession,
             measurementDevice: measurement.measurementDevice
@@ -61,7 +64,7 @@ const toMapPointsMapper = (measurement) => {
         adaptedMeasurementObject.qrsrq = (originalAllMeasurements?.qrsrq.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
         adaptedMeasurementObject.sinr = (originalAllMeasurements?.sinr.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
         //Cell info
-        adaptedMeasurementObject.cellInfo = { ...(originalAllMeasurements.cells.filter((elem) => elem.accessTechnology === FILTER_TECH))?.[0] } && "Unsupported cell (NOT 5G or 4G)"
+        adaptedMeasurementObject.cellInfo = { ...(originalAllMeasurements.servingCell.cells.filter((elem) => elem.accessTechnology && elem.accessTechnology === FILTER_TECH))?.[0] } && "Unsupported cell (NOT 5G or 4G)"
 
 
         return adaptedMeasurementObject
@@ -133,63 +136,146 @@ export function renderMap(map,
             p.sessionId === s._id && p.measurementDevice === "RaspberryPi4B").sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
 
 
-
-        console.log("PI_CORRECTION_POINTS", piCorrectionPoints[0] ?? "none")
+        const referencePiMeasurePoint = piCorrectionPoints[0] 
+        console.log(`Reference PI_MEASUREMENT point for sesssion ${s._id} `, referencePiMeasurePoint?? "none")
 
 
 
 
         //I need to create a button only if there are pi-measurements
         const PI_CORRECTION_SECTION_HTML_TEMPLATE = `
-        <div class="pi-correction"> 
-
-            <p>
+        <div class="pi-correction-for-session-available" >
                 {{pi_details}}
-            </p>    
-
-            <button 
-                type="button" 
-                tooltip={{tooltip}}
-                onClick={{action}}> 
-                {{label}}
-            </button>
-        </div>
+                {{switch}}
+                <span> 
+                    <span class="key"> Measurement device :</span> 
+                    <span class="value">  {{device}} </span> 
+                </span> 
+                <span> 
+                    <span class="key" title="Received Signal Strength Indicator"> RSSI :</span> 
+                    <span class="value">  {{rssi}} </span> 
+                </span> 
+                <span> 
+                    <span class="key" title=""> Channel bit error rate :</span> 
+                    <span class="value">  {{channelBitErrorRate}} </span> 
+                </span> 
+                <span> 
+                    <span class="key" title="Reference Signal Received Power"> QRSRP :</span> 
+                    <span class="value">  {{qrsrp}} </span> 
+                </span> 
+                <span> 
+                    <span class="key" title="Reference Signal Received Quality"> QRSRQ :</span> 
+                    <span class="value">  {{qrsrq}} </span> 
+                </span> 
+                <span> 
+                    <span class="key" title="Signal-to-Interference-plus-Noise Ratio"> sinr :</span> 
+                    <span class="value">  {{sinr}} </span> 
+                </span> 
+                <span> 
+                    <span class="key"> cellType :</span> 
+                    <span class="value">  {{cellType}} </span> 
+                </span> 
+            </div>
         `
 
+
+
+        const piCorrectionSwitch = SwitchComponent("Raspbi Correction",
+            (ev) => {
+                const isOn = ev.target.checked
+                alert(`THE SWITCH INPUT IS ${isOn ? "ON" : "OFF"}`)
+            })
+
+
+        //this  goes when there are actually pi-measurements
         const PiMeasurementsTemplateReplacements = {
-            label: "Session info",
-            pi_details: JSON.stringify(piCorrectionPoints[0]),
-            tooltip: "Perform corrections based on the estimated value using a raspberry Pi",
-            action: () => { alert("This is a button ") }
+            // pi_details: JSON.stringify(referencePiMeasurePoint),
+            device: referencePiMeasurePoint?.measurementDevice,
+            rssi: referencePiMeasurePoint?.rssi,
+            channelBitErrorRate: referencePiMeasurePoint?.channelBitErrorRate,
+            qrsrp: referencePiMeasurePoint?.qrsrp,
+            qrsrq: referencePiMeasurePoint?.qrsrq,
+            sinr: referencePiMeasurePoint?.sinr,
+            cellType: referencePiMeasurePoint?.cellInfo,
+            switch: piCorrectionSwitch
         }
 
-        const buttonDOMNode = JSUtils.
+        const raspberryPiRefValues = JSUtils.
             replaceTemplatePlaceholdersAndBindHandlers(PI_CORRECTION_SECTION_HTML_TEMPLATE,
                 PiMeasurementsTemplateReplacements
             );
 
 
-        const SESSION_INFO_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">  
-                                                    <header > 
-                                                        <h4>{{title}}</h4>
-                                                    </header>
-                                                    {{popupButtons}}
-                                                    <footer>
-                                                        <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
-                                                    </footer>
+        //This shows all relevant details details of a session
 
-                                                </div>`
+        const SESSION_DETAIL_HTML_TEMPLATE = `
+            <div class="session-details" >
+                <span> 
+                    <span class="key"> Id :</span> 
+                    <span class="value">  {{id}} </span> 
+                </span> 
+                <span> 
+                    <span class="key"> CreatedAt :</span>  
+                    <span class="value"> {{createdAt}} </span> 
+                </span>
+                <span> 
+                    <span class="key"> 📍 WorldPosition (Lat, Lon) : </span>  
+                    <span class="value"> ({{lat}} , {{lon}}) </span>
+                </span>
+                <span> 
+                    <span class="key"> 👤 CreatedBy :</span>  
+                    <span class="value"> {{creator}} </span>
+                </span> 
+                <span>
+                    <span class="key"> 💬 Comments :</span> 
+                    <span class="value">  {{comment}} </span>
+                </span>
+                <span> 
+                    <span class="key"> 📱 MeasurementDevice : </span> 
+                    <span class="value"> {{device}} </span>
+                </span>
+            </div>
+        `
+        const sessionDetail = JSUtils.
+            replaceTemplatePlaceholdersAndBindHandlers(
+                SESSION_DETAIL_HTML_TEMPLATE,
+                {
+                    id: s._id,
+                    createdAt: `⌚ ${getNaturalLanguageDate(s.timestamp)}`,
+                    lat: s.worldPosition.lat,
+                    lon: s.worldPosition.lon,
+                    creator: s.measurementsOwner ?? "Owner not specified",
+                    comment: s.comment ?? "No comment for this session",
+                    device: s.measurementDevice
+                }
+            );
+
+
+        //Put all together in an info popup
+        const SESSION_INFO_POPUP_HTML_TEMPLATE =
+            `<div class="tooltip-detail">  
+                <header class="tooltip-header" >  
+                    {{title}}
+                </header>
+                <div class="tooltip-body" >
+                    {{sessionDetail}}
+                    {{raspberryPiRefValues}}
+                <div>
+                {{popupButtons}}
+                <footer>
+                   
+                </footer>
+        </div>`
 
 
         const replacements = {
-            title: "Session info",
-            timestamp: getNaturalLanguageDate(s.timestamp),
-            popupButtons: piCorrectionPoints.length > 0 ? buttonDOMNode : " No raspbi measurements available for this session",
-            actions: () => { alert("Clicked ") }
+            title: `👁️ Measurement Session`,
+            sessionDetail: sessionDetail,
+            raspberryPiRefValues: raspberryPiRefValues ?? JSUtils.replaceTemplatePlaceholdersAndBindHandlers("<span> No RaspberryPi reference measurements found </span>"),
         }
 
 
-        // I can mix this in a single call probably
+
         const popupSession = JSUtils.
             replaceTemplatePlaceholdersAndBindHandlers(SESSION_INFO_POPUP_HTML_TEMPLATE,
                 replacements

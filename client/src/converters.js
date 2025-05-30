@@ -15,7 +15,7 @@ export function getNaturalLanguageDate(timestampString) {
 
     } catch (e) {
         console.error("ERROR WHEN CONVERTING TIME TO FORMATED DATE", e)
-        return "BAD DATE"
+        return "Unparseable date"
     } 
     
 

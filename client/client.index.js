@@ -51,12 +51,16 @@ let myState = null
 
 try {
 
-    const sessionsForDefaultRoom = (await getSessionsForRoom(allRooms[0]._id)).data
+    const DEFAULT_ROOM_IDX = allRooms.length - 1
+
+
+
+    const sessionsForDefaultRoom = (await getSessionsForRoom(allRooms[DEFAULT_ROOM_IDX]._id)).data
     console.log("📱📏 SESSIONS ", sessionsForDefaultRoom)
 
     myState = new PageState(
         "visualization_state",
-    /*default room */ allRooms[0],
+    /*default room */ allRooms[DEFAULT_ROOM_IDX],
         /*default sessions */
         sessionsForDefaultRoom,
         /* visualizing property */ "dbm"

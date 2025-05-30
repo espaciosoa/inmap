@@ -52,10 +52,10 @@ const sslOptions = {
 };
 
 const app = express();
+//  @todo
+// Should further configure for production 
 app.use(cors({
   origin: "*"
-  // origin: 'https://localhost:8442',
-
 }))
 
 

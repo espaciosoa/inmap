@@ -80,7 +80,9 @@ export default class JSUtils {
                 return "";
             }
             //Added support for HTML nodes using replace
-            else if (toReplaceValue instanceof HTMLDivElement) {
+            else if (
+                toReplaceValue instanceof HTMLDivElement ||
+                toReplaceValue instanceof HTMLSpanElement) {
                 // The node should be appended a posteriori
                 return `<div data-replaceme="${trimmedName}"> THIS DIV WILL DISSAPEAR AFTER REPLACEMENT WITH INNER CHILD </div>`
             }
