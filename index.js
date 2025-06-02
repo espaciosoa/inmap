@@ -59,10 +59,6 @@ app.use(cors({
 }))
 
 
-const ObjectId = require('mongoose').Types.ObjectId;
-
-
-
 const dbConnection = require('./db')(process.env.HOST, process.env.MONGO_PORT, process.env.MONGO_DB_NAME);
 const { Room, RoomMeasurement, MeasurementSession } = require("./src/model/allModels.js")
 
@@ -95,7 +91,7 @@ const RoomMeasurementsAPIEndpoints = require("./src/routes/rest/RoomMeasurements
 app.use('/v1/API/RoomMeasurements', RoomMeasurementsAPIEndpoints)
 
 
-//Login & Logout with JWT
+// Login & Logout with JWT
 const { AuthenticationEndpoints } = require("./src/routes/rest/Auth")
 app.use("/v1/API/", AuthenticationEndpoints)
 
@@ -123,117 +119,13 @@ app.use((req, res) => {
 
 
 
-
-async function removeRoomByNameCascade(name) {
-  const room = await Room.findOne({ name: name })
-  if (!room) {
-    return
-  }
-  console.log("About to remove room by name ", name)
-  await RoomMeasurement.deleteMany({ roomId: room._id })
-  await MeasurementSession.deleteMany({ roomId: room._id })
-  await Room.deleteOne({ _id: room._id })
-
-}
-
-
-async function removeRoomCascade(id) {
-
-  await RoomMeasurement.deleteOne({ roomId: id }).exec()
-  await MeasurementSession.deleteOne({ roomId: id }).exec()
-  await Room.deleteOne({ _id: id }).exec()
-}
-
-
-
-async function removeSessionCascade(id) {
-
-
-  //Check if session  is the only one for a room
-
-  const session = MeasurementSession.findOne({ _id: id })
-  const roomId = session.roomId  // The room being measured
-  //Check if there is only a single session for this room, and thus delete the room
-  const isOnlySessionRoom = (_roomId) => MeasurementSession.countDocuments({ roomId: _roomId })
-  if (isOnlySessionRoom(roomId))
-    await removeRoomCascade(roomId)
-  else {
-    await MeasurementSession.deleteOne({ _id: id })
-  }
-}
-
-
-async function removeAll() {
-
-  await RoomMeasurement.deleteMany({}).exec()
-  await MeasurementSession.deleteMany({}).exec()
-  await Room.deleteMany({}).exec()
-
-  return
-
-}
-
-
-(async () => {
-  await listUselessData(false)
-  // const cleanup = await askQuestion("Delete?") ?? "n"
-  // if (cleanup.toLowerCase() === "y") {
-  //   await listUselessData(true)
-  // }
-})()
-
-
-
-
-//MOVE ME 
-// Checks for useless and test data in the db that can be deleted
-async function listUselessData(performDelete = false) {
-
-  const allRooms = await Room.find({})
-
-  //Explore all rooms and the corresponding measurements
-  for (const r of allRooms) {
-
-    if (r.name.length < 2) {
-      console.warn(`⚠️ Room ${r.name} with id ${r._id} has a super short name, it's possibly a test`)
-      if (performDelete) {
-        removeRoomCascade(r._id)
-        continue;
-      }
-    }
-
-    const isSingleRepeatedDigit = (str) => /^([a-zA-Z0-9])\1*$/.test(str)
-    if (isSingleRepeatedDigit(r.name)) {
-      console.warn(`⚠️ Room ${r.name} with id ${r._id} looks like a test. Consider deleting it`)
-      if (performDelete) {
-        removeRoomCascade(r._id)
-        continue;
-      }
-    }
-
-    const allSessionsForRoom = await MeasurementSession.find({ roomId: r })
-
-    for (const s of allSessionsForRoom) {
-
-      const measurementsForSession = await RoomMeasurement.countDocuments({ measurementSession: s._id })
-
-      if (measurementsForSession < 20) {
-        console.warn(`⚠️ Session ${s._id} (associated to room '${r.name}'  ) has ${measurementsForSession} measurements, which is not a lot. It is possibly a test`)
-        if (performDelete) {
-          await removeSessionCascade(s._id)
-        }
-      }
-    }
-
-
-  }
-
-
-
-  //Should check for unlinked sessions or measurements
+setInterval(() => {
   raspberryPiMeasurementsProcessing()
+}, 10000)
 
-}
+
+
+
 
 
 

@@ -1,0 +1,7 @@
+# This is a comment
+.env.production
+.env.development
+.deployment/
+.deployment/.priv/
+.deployment/.priv/nginx/
+.sh.lib/

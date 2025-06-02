@@ -45,6 +45,14 @@ Also make sure that MongoDB is running in the deployment server.
 sudo systemctl status mongod # check status
 sudo systemctl start mongod # use start or restart to init the mongo instance and problems should be gone
 ``` 
+You can use pm2 to run the application forever in production (from the root dir of the site (e.g., `/sites/5G-mapper-backend`))
+
+```sh
+pm2 start npm --name "measurements.espaciosoa" -- run prod
+# optionally save the process to be able to reload it easily later 
+```
+
+
 
 ## Development
 
