@@ -145,7 +145,7 @@ myState.subscribe("onActiveRoomChanged", async (activeRoom) => {
     showRoomAsTable(ROOM_DIV,
         myState.activeRoom,
     )
-    hidePopup()
+    // hidePopup()
 })
 myState.subscribe("onActiveSessionsChanged", async (activeSessions) => {
     await fetchMeasurementsIntoState()
@@ -162,7 +162,9 @@ myState.subscribe("onChangeState", (state) => {
     console.log("📶 MEASUREMENTS ", state.activeMeasurements)
     console.groupEnd()
 
-    renderMap(map, visualizationCenter, state.activeSessions, state.activeMeasurements)
+    
+
+    renderMap(map, visualizationCenter, state.activeSessions,  state.activeMeasurements, 0, state.visualizingProperty)
 })
 
 let visualizationCenter = {
@@ -303,12 +305,14 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
 })
 
 myState.subscribe("onVisualizedPropertyChanged", (property) => {
-    // renderMap(map, visualizationCenter,
-    //     myState.activeSessions,
-    //     myState.activeMeasurements,
-    //     0,
-    //     property
-    // )
+    showPopup("Recalculating...", "load")
+    renderMap(map, visualizationCenter,
+        myState.activeSessions,
+        myState.activeMeasurements,
+        0,
+        property
+    )
+
 })
 
 

@@ -105,7 +105,7 @@ export default class JSUtils {
                     const handlerName = attr.value.trim();
                     const handler = replacements[handlerName];
 
-                    console.log(`Binding handler ${handlerName} to event ${eventType} on element`, el);
+                    // console.log(`Binding handler ${handlerName} to event ${eventType} on element`, el);
 
                     if (typeof handler === 'function') {
                         el.addEventListener(eventType, handler);
@@ -119,12 +119,12 @@ export default class JSUtils {
                 //Added support to replace HTML NODES in templates
                 else if (attr.name.startsWith('data-replaceme')) {
 
-                    console.log(`Substituting HTMLNode in template `, el);
+                    // console.log(`Substituting HTMLNode in template `, el);
                     const templateStringName = attr.value.trim();
 
                     const HTMLDOMElem = replacements[templateStringName]
 
-                    console.log("HTML DOM ELEMENT TO be inserted ", HTMLDOMElem)
+                    // console.log("HTML DOM ELEMENT TO be inserted ", HTMLDOMElem)
                     el.replaceWith(HTMLDOMElem)
 
                 }

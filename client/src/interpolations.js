@@ -51,7 +51,7 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         ).filter(kdp => kdp.distance <= searchRadius)
 
 
-    // console.log("NEARBY Data points",nearbyDataPoints )
+    console.log("NEARBY Data points", nearbyDataPoints)
 
 
     let weightedValueSummatory = 0;
@@ -65,17 +65,7 @@ export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadiu
         weightsSummatory += w_i;
     });
 
-
-
-
     let estimatedValue = weightedValueSummatory / weightsSummatory;
-
-    // console.groupCollapsed("harvesineComputation ")
-    // console.log("wValueSum =", weightedValueSummatory)
-    // console.log("wSummatory =", weightsSummatory)
-    // console.log("estimation = wValueSum/wSummatory =", estimatedValue)
-    // console.groupEnd()
-
     return estimatedValue
 
 }
@@ -146,6 +136,15 @@ export function dotProduct(p1, p2) {
 
 
 export function getLatLongBoundingBox(points) {
+
+
+
+    if (!points || points.length === 0) {
+        console.error(points)
+        throw new Error("No valid points were passed to getLatLongBoundingBox")
+
+    }
+
     const latitudes = points.map(point => point.lat);
     const longitudes = points.map(point => point.lon);
 

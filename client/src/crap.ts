@@ -25,16 +25,6 @@ export type NumericProperty = "dbm" | "asuLevel" | "level" |
     "csiRsrp" | "csiCqiTableIndex" | "csiRsrq" | "csiSinr" | "ssRsrp" | "ssRsrq" | "ssSinr"
 
 
-// I need to compute always the percentage (constrain in the min,max range)
-// For numeric elements, interpolation should be fine
-
-
-// For categories probably I need icons
-// getValueColor
-
-
-
-
 const units = new Map<NumericProperty, string>([
 
     ['dbm', 'dBm'],
@@ -130,139 +120,149 @@ export function getPropertyRange(signalPropertyName: NumericProperty): Range | u
 
 
 
-    export function getFilterablePropertiesList(type: "5G" | "4G"): Array<string> {
-        return units.keys().toArray()
-    }
+export function getFilterablePropertiesList(type: "5G" | "4G"): Array<string> {
+
+
+    const FourG_Only_Props = ["cqi", "cqiTableIndex", "rsrp", "rsrq", "rssi", "rssnr"]
+    const FiveG_Only_Props = ["csiRsrp", "csiCqiTableIndex", "csiRsrq", "csiSinr", "ssRsrp", "ssRsrq", "ssSinr"]
+
+    if (type === "4G")
+        return units.keys().toArray().filter((v) => !FiveG_Only_Props.includes(v))
+    else if (type === "5G")
+        return units.keys().toArray().filter((v) => !FourG_Only_Props.includes(v))
+    else 
+        throw new Error("Unsupported type passed to getFilterablePropertiesList")
+}
 
 
 
-    //Here I define different behaviours of color assignment depending on the property
+//Here I define different behaviours of color assignment depending on the property
 
-    // Takes property 0 to 1 and  value 
-    export function getPropertyColorForValue(property: NumericProperty, value: number) {
+// Takes property 0 to 1 and  value 
+export function getPropertyColorForValue(property: NumericProperty, value: number) {
 
-        if (property !== "level" && property !== "asuLevel") {
-            //CAMBIAR PARA QUE CADA PROPIEDAD TENGA SU RANGO
+    if (property !== "level" && property !== "asuLevel") {
+        //CAMBIAR PARA QUE CADA PROPIEDAD TENGA SU RANGO
 
-            const propRange= getPropertyRange(property)
+        const propRange = getPropertyRange(property)
 
-            if ( !propRange ){
-                console.warn("proprRange not found for property ", property )
-                return "#000000"
-            }
+        if (!propRange) {
+            console.warn("proprRange not found for property ", property)
+            return "#000000"
+        }
 
-            const valueInZeroOneRange = getNormalizedValueInRange(
-                value,
-        propRange?.min,
-        propRange?.max
-            )
+        const valueInZeroOneRange = getNormalizedValueInRange(
+            value,
+            propRange?.min,
+            propRange?.max
+        )
 
 
-            return interpolateColor(valueInZeroOneRange
-                , [
+        return interpolateColor(valueInZeroOneRange
+            , [
                 { position: 0, color: "#eb3734" },
                 { position: 1, color: "#34ebde" },
             ])
-        }
-        else {
-            //This works as expected
-           return  matchColorLevel(value)
-        }
-
-
+    }
+    else {
+        //This works as expected
+        return matchColorLevel(value)
     }
 
 
+}
 
 
 
 
 
-    function matchColorLevel(level: number) {
 
-        let color = "#FFFFFF"
-        switch (level) {
-            case 0: color = "#FF8282"
-                break;
-            case 1: color = "#FFC482"
-                break;
-            case 2: color = "#F0FF82"
-                break;
-            case 3: color = "#82FF8A"
-                break;
-            case 4: color = "#82CBFF"
-                break;
-        }
-        return color
 
+function matchColorLevel(level: number) {
+
+    let color = "#FFFFFF"
+    switch (level) {
+        case 0: color = "#FF8282"
+            break;
+        case 1: color = "#FFC482"
+            break;
+        case 2: color = "#F0FF82"
+            break;
+        case 3: color = "#82FF8A"
+            break;
+        case 4: color = "#82CBFF"
+            break;
+    }
+    return color
+
+}
+
+
+
+
+// takes values from 0, 1
+export const interpolateColor = (value: number, breakpoints: ColorBreakpoint[]): string => {
+    if (breakpoints.length < 2) {
+        throw new Error("At least two breakpoints are required for obtaining a Lerped color");
     }
 
+    // Sort breakpoints by position
+    breakpoints.sort((a, b) => a.position - b.position);
 
+    // Clamp value within the range of breakpoints
+    if (value <= breakpoints[0].position) return breakpoints[0].color;
+    if (value >= breakpoints[breakpoints.length - 1].position) return breakpoints[breakpoints.length - 1].color;
 
+    // Find surrounding breakpoints
+    let lower = breakpoints[0];
+    let upper = breakpoints[breakpoints.length - 1];
 
-    // takes values from 0, 1
-    export const interpolateColor = (value: number, breakpoints: ColorBreakpoint[]): string => {
-        if (breakpoints.length < 2) {
-            throw new Error("At least two breakpoints are required for obtaining a Lerped color");
+    for (let i = 0; i < breakpoints.length - 1; i++) {
+        if (value >= breakpoints[i].position && value <= breakpoints[i + 1].position) {
+            lower = breakpoints[i];
+            upper = breakpoints[i + 1];
+            break;
         }
-
-        // Sort breakpoints by position
-        breakpoints.sort((a, b) => a.position - b.position);
-
-        // Clamp value within the range of breakpoints
-        if (value <= breakpoints[0].position) return breakpoints[0].color;
-        if (value >= breakpoints[breakpoints.length - 1].position) return breakpoints[breakpoints.length - 1].color;
-
-        // Find surrounding breakpoints
-        let lower = breakpoints[0];
-        let upper = breakpoints[breakpoints.length - 1];
-
-        for (let i = 0; i < breakpoints.length - 1; i++) {
-            if (value >= breakpoints[i].position && value <= breakpoints[i + 1].position) {
-                lower = breakpoints[i];
-                upper = breakpoints[i + 1];
-                break;
-            }
-        }
-
-        // Linear interpolation factor (between 0 and 1)
-        const t = (value - lower.position) / (upper.position - lower.position);
-
-        // Convert hex to RGB
-        const lowerRGB = hexToRgb(lower.color);
-        const upperRGB = hexToRgb(upper.color);
-
-        if (!lowerRGB || !upperRGB) {
-            throw new Error("Invalid color format");
-        }
-
-        // Interpolate RGB values
-        const r = Math.round(lowerRGB.r + t * (upperRGB.r - lowerRGB.r));
-        const g = Math.round(lowerRGB.g + t * (upperRGB.g - lowerRGB.g));
-        const b = Math.round(lowerRGB.b + t * (upperRGB.b - lowerRGB.b));
-
-        // Return as hex string
-        return rgbToHex(r, g, b);
-    };
-
-
-
-
-    export function getNormalizedValueInRange(value: number, min: number, max: number) {
-        return ((value - min) / (max - min));
     }
 
-    const hexToRgb = (hex: string) => {
-        const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-        if (!match) return null;
+    // Linear interpolation factor (between 0 and 1)
+    const t = (value - lower.position) / (upper.position - lower.position);
 
-        return {
-            r: parseInt(match[1], 16),
-            g: parseInt(match[2], 16),
-            b: parseInt(match[3], 16)
-        };
-    };
+    // Convert hex to RGB
+    const lowerRGB = hexToRgb(lower.color);
+    const upperRGB = hexToRgb(upper.color);
 
-    const rgbToHex = (r: number, g: number, b: number) => {
-        return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+    if (!lowerRGB || !upperRGB) {
+        throw new Error("Invalid color format");
+    }
+
+    // Interpolate RGB values
+    const r = Math.round(lowerRGB.r + t * (upperRGB.r - lowerRGB.r));
+    const g = Math.round(lowerRGB.g + t * (upperRGB.g - lowerRGB.g));
+    const b = Math.round(lowerRGB.b + t * (upperRGB.b - lowerRGB.b));
+
+    // Return as hex string
+    return rgbToHex(r, g, b);
+};
+
+
+
+
+export function getNormalizedValueInRange(value: number, min: number, max: number) {
+    return ((value - min) / (max - min));
+}
+
+const hexToRgb = (hex: string) => {
+    const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (!match) return null;
+
+    return {
+        r: parseInt(match[1], 16),
+        g: parseInt(match[2], 16),
+        b: parseInt(match[3], 16)
     };
+};
+
+const rgbToHex = (r: number, g: number, b: number) => {
+    return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+};

@@ -8,27 +8,7 @@ function isObject(item) {
     return (item && typeof item === "object" && !Array.isArray(item));
 }
 
-
-function isObjectForce(item) {
-    if (item && typeof item === "object" && !Array.isArray(item)) {
-        console.log("Object", item)
-        return true;
-    }
-    //Attempt to parse as JSON and do comparison again
-    try {
-        const itemAsObject = JSON.parse(item);
-        if (itemAsObject && typeof itemAsObject === "object" && !Array.isArray(itemAsObject)) {
-            return true
-        }
-    } catch (e) {
-        console.warn("Error parsing JSON", e.message);
-    }
-    console.log("Not an object", item)
-    return false;
-
-
-}
-
+const DEBUG = false
 
 //Given the rooms endpoint, shows all the possible rooms as select options
 /***
@@ -163,30 +143,30 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
 
         const checkboxDOM_Node = JSUtils.txtToHTMLNode(myCheckboxes)
 
-        console.log("ASSIGNING SELECTED CHECKBOXES", selected)
-        console.log("DATA", data)
+        if (DEBUG) console.log("ASSIGNING SELECTED CHECKBOXES", selected)
+        if (DEBUG) console.log("DATA", data)
         // Set checkboxes as selected
 
         // console.log("data._id  in selected.map(s=>s._id) ", data._id in selected.map(s => s._id))
         // console.log("selected.map(s=>s._id) ", selected.map(s => s._id))
         // console.log("data_id ", data._id)
         if (selected && selected.map(s => s._id).includes(data._id)) {
-            console.log("THIS " + data._id + " is selected")
+            if (DEBUG) console.log("THIS " + data._id + " is selected")
             checkboxDOM_Node.querySelector("input[type=checkbox]").setAttribute("checked", true);
         }
 
 
 
         //TODO: Event subscription pending here
-        console.log("Adding onChange events to checkboxes")
+        if (DEBUG) console.log("Adding onChange events to checkboxes")
         checkboxDOM_Node.addEventListener("change", (ev) => {
             const checkbox = ev.target
             const isActive = checkbox.checked
-            console.log(checkbox.dataset)
+            if (DEBUG) console.log(checkbox.dataset)
             const toActivateThing = checkbox.dataset.type
             const toActivateId = checkbox.dataset.id
 
-            console.log(`${checkbox} ${toActivateThing} CHANGED isActive ? ${isActive} | id: ${toActivateId}  `)
+            if (DEBUG) console.log(`${checkbox} ${toActivateThing} CHANGED isActive ? ${isActive} | id: ${toActivateId}  `)
 
 
             isActive ?
@@ -283,7 +263,11 @@ function createTableFromObject(data, lastKey = "", opts = {
 
 }) {
 
-    console.groupCollapsed("createTableFromObject")
+
+
+
+
+    if (DEBUG) console.groupCollapsed("createTableFromObject")
 
     const elem = document.createElement("div");
     elem.classList.add("inner-object");
@@ -311,9 +295,9 @@ function createTableFromObject(data, lastKey = "", opts = {
             if (opts.editableKeys.includes(key)) {
 
                 const handlers = {
-                    handleClick: (e) => { console.log("Found and clicked editable inner key", key) },
+                    handleClick: (e) => { if (DEBUG) console.log("Found and clicked editable inner key", key) },
                     handleChange: (e) => {
-                        console.log(`User changed ${key} = ${data[key]} to value ${e.target.value}`)
+                        if (DEBUG) console.log(`User changed ${key} = ${data[key]} to value ${e.target.value}`)
 
                         //If we have a validation function, use it
                         if (opts.validateValues) {
@@ -425,10 +409,10 @@ function createTableFromArray(data,
 
                 if (opts.editableKeys?.includes(key)) {
 
-                    console.log("FOUND EDITABLE KEY", key)
+                    if (DEBUG) console.log("FOUND EDITABLE KEY", key)
                     const handlers = {
                         handleChange: (e) => {
-                            console.log(`User changed ${key} = ${obj[key]} to value ${e.target.value}`)
+                            if (DEBUG) console.log(`User changed ${key} = ${obj[key]} to value ${e.target.value}`)
 
                             //If we have a validation function, use it
                             if (opts.validateValues) {
@@ -448,7 +432,7 @@ function createTableFromArray(data,
                                 obj[key] = e.target.value
                             }
                         },
-                        handleClick: (e) => { console.log('Clicked editableValue:', e.target.value) }
+                        handleClick: (e) => { if (DEBUG) console.log('Clicked editableValue:', e.target.value) }
                     };
 
                     const objectValueHTML_template = ` <div class="editable-cell">

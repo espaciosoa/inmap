@@ -1,9 +1,10 @@
 import JSUtils from "./Helpers.js"
 
+
 export function initPopup() {
 
     const popupTemplate = `
-    <div class="modal-wrapper" >
+    <div class="modal-wrapper"  data-id={{popupId}}>
     <div class="modal-bg-page-cover"></div>
     <div class="my-load-popup">
         <svg class="loading-svg rotate" width="{{iconSize}}" height="{{iconSize}}" viewBox="0 0 24 24" fill="currentColor">
@@ -22,10 +23,12 @@ export function initPopup() {
 
 
 
+    let uuid = self.crypto.randomUUID();
+
     const popupTemplate_Filled = JSUtils.replaceTemplatePlaceholders(popupTemplate,
         {
-            iconSize: "2em"
-            //Here i could add initial configurations
+            popupId: uuid,
+            iconSize: "2em",
         });
 
     const popupNode = JSUtils.txtToHTMLNode(popupTemplate_Filled)
@@ -89,7 +92,7 @@ export function initPopup() {
         POPUP_SCREEN_TEXT.innerText = text || "Something is going on..."
 
 
-        console.log("Popup opened",text)
+        console.log("Popup opened", text)
 
     }
     function hidePopup() {
