@@ -16,6 +16,12 @@ import { SwitchComponent } from "./components/switch.component.js"
 // I am using these to group logically related elements in the map (e.g., all measurements related to a session, the heatmap, etc)
 let layerGroups = []
 
+//Plaza mayor
+export const defaultLatLon = { lat: 40.4233828, lon: -3.7121647 }
+let visualizationCenter = defaultLatLon;
+
+
+
 function clearMapLayers(map) {
     layerGroups.forEach((l) => {
         console.log("Removing map layer for rerendering", l)
@@ -106,7 +112,6 @@ const toMapPointsMapper = (measurement) => {
  * points: array of points with the data to paint
  * */
 export function renderMap(map,
-    visCenter,
     sessions,
     points,
     rotation = 0,
@@ -118,10 +123,17 @@ export function renderMap(map,
 
     const SHOW_BBOX = false
 
+    // RESETEO LA POSICIÓN DEL CENTRO DEL MAPA
+    visualizationCenter = sessions.length > 0 ? getAverageLatLng(sessions.map(s => s.worldPosition)) : defaultLatLon;
+    const visCenter = visualizationCenter
+    console.log("Rendering map 🗺️ with center at", visCenter)
+
+    map.setView([visCenter.lat, visCenter.lon])
+
 
     showPopup("Re-rendering map", "load")
     setTimeout(() => {
-       
+
 
         console.log("RENDER MAP")
 
@@ -133,9 +145,12 @@ export function renderMap(map,
         //This reformats the points to have a common interface (kinda)
         points = points.map(toMapPointsMapper)
 
-        console.log("Rendering map 🗺️ with center at", visCenter)
 
-        map.setView([visCenter.lat, visCenter.lon])
+
+
+
+
+
 
         //1. Show visually the estimated centroid of all measured points    
         //This is the estimated center 
@@ -232,7 +247,7 @@ export function renderMap(map,
 
         destroyPopup(); // after rendering finishes
     }, 0);
-    
+
 }
 
 
@@ -457,15 +472,11 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
     //add to list of layered info, so that re-rendering on change origin can move printed 
     layerGroups.push({ name: `MeasurementsForSession'${session._id}'`, layer: theseMeasurementsMapLayer })
 
-
-
 }
 
 
 
-
 let zoomListener = null;
-
 function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what to display */) {
 
 
@@ -621,3 +632,6 @@ function scaleCorrect(refValue, toCorrectValue) {
     return scaleBias
 
 }
+
+
+

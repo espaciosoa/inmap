@@ -38,20 +38,22 @@ export function estimateValueIDW(dataPoint, knownDataPoints, searchRadius, p = 1
 
 
 //TESTED
-export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadius, p = 1) {
+export function estimateValueIDW_LatLong(dataPoint, knownDataPoints, searchRadius /*meters*/, p = 1) {
 
     //Get datapoints that fall with the search radius
-    const nearbyDataPoints = knownDataPoints.
-        map(kdp => {
-            return {
-                ...kdp,
-                distance: getHaversineDistanceKM(dataPoint.lat, dataPoint.lon, kdp.lat, kdp.lon) / 1000
-            }
-        }
-        ).filter(kdp => kdp.distance <= searchRadius)
+    const nearbyDataPoints =
+        knownDataPoints.
+            map(kdp => {
+                return {
+                    ...kdp,
+                    distance: getHaversineDistanceMeters(dataPoint.lat, dataPoint.lon, kdp.lat, kdp.lon)
+                }
+            })
+            .filter(kdp => kdp.distance <= searchRadius)
 
 
-    console.log("NEARBY Data points", nearbyDataPoints)
+
+    console.log(`NEARBY Data points (distance <=${searchRadius} m ) `, nearbyDataPoints)
 
 
     let weightedValueSummatory = 0;
@@ -90,8 +92,9 @@ export function getEuclideanDistance(p1, p2) {
 
 
 
+// ✅ TESTED
+export function getHaversineDistanceMeters(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
 
-export function getHaversineDistanceKM(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
     function toRad(degree) {
         return degree * Math.PI / 180;
     }
@@ -111,10 +114,9 @@ export function getHaversineDistanceKM(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
         * sin(dLon / 2) * sin(dLon / 2);
     const c = 2 * atan2(sqrt(a), sqrt(1 - a));
     const d = R * c;
-
     // console.log("Computed harvesine distance", d)
 
-    return d; // distance in km
+    return d * 1000.0  // Distance in meters;
 }
 
 
