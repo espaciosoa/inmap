@@ -93,7 +93,7 @@ async function listUselessData(askForFixInteractively = false) {
 
   const allRooms = await Room.find({})
 
-  //Explore all rooms and the corresponding measurements
+  // Explore all rooms and the corresponding measurements
   for (const r of allRooms) {
 
     if (r.name.length < 2) {
@@ -109,7 +109,7 @@ async function listUselessData(askForFixInteractively = false) {
       }
     }
 
-
+    // Check names like "aaaa", same letter repeated
     if (isSingleRepeatedDigit(r.name)) {
       console.warn(`⚠️ Room ${r.name} with id ${r._id} looks like a test. Consider deleting it`)
       if (askForFixInteractively) {
@@ -133,13 +133,20 @@ async function listUselessData(askForFixInteractively = false) {
           const result = confirmed ? await removeSessionCascade(s._id) : "Not removed"
           console.log(result)
 
-
         }
       }
     }
 
 
   }
+
+
+  //Check unlinked measurements
+  //TODO
+
+
+
+
 }
 
 

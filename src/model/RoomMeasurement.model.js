@@ -15,7 +15,8 @@ const RoomMeasurementSchema = new Schema({
     signalMeasurement: mongoose.Schema.Types.Mixed,
     measurementDevice: {
         type: String,
-        required: [true, 'measurementDevice is required']
+        // required: [true, 'measurementDevice is required']
+        default: "ANDROID_PHONE"
     },
     version: {
         type: Number,
