@@ -3,7 +3,7 @@ import { LEAFLET_POPUP_HTML_TEMPLATE } from "./leaflet.templates.js"
 import JSUtils from "./Helpers.js"
 import {
     localToGeo, validateLat, validateLong, isNumber, rotatePointMap,
-    getAverageLatLng
+    getAverageLatLng, getDistanceInMeters
 }
     from "./geo.utils.js"
 import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox } from "./interpolations.js"
@@ -56,7 +56,7 @@ const toMapPointsMapper = (measurement) => {
     ) {
 
         //Extract the bare basics
-        const adaptedMeasurementObject = {
+        let adaptedMeasurementObject = {
             _id: measurement._id,
             ...measurement.position,
             timestamp: measurement.timestamp,
@@ -83,7 +83,11 @@ const toMapPointsMapper = (measurement) => {
         adaptedMeasurementObject.qrsrq = (originalAllMeasurements?.qrsrq.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
         adaptedMeasurementObject.sinr = (originalAllMeasurements?.sinr.filter((elem) => elem.radioAccessTech === FILTER_TECH))[0]?.prx ?? "IDK"
         //Cell info
-        adaptedMeasurementObject.cellInfo = { ...(originalAllMeasurements.servingCell.cells.filter((elem) => elem.accessTechnology && elem.accessTechnology === FILTER_TECH))?.[0] } && "Unsupported cell (NOT 5G or 4G)"
+        adaptedMeasurementObject.cellInfo = { ...(originalAllMeasurements.servingCell.cells.filter((elem) => elem.accessTechnology && elem.accessTechnology === FILTER_TECH))?.[0] } ?? "Unsupported cell (NOT 5G or 4G)"
+
+
+        adaptedMeasurementObject = { ...adaptedMeasurementObject, ...adaptedMeasurementObject.cellInfo }
+
 
 
         return adaptedMeasurementObject
@@ -183,7 +187,7 @@ export async function renderMap(map,
 
         //PLOT INFO OF A SPECIFIC SESSION
         renderSession(singleSessionLayerGroup, s, piCorrectionPoints[0],
-            //What happens on toggle
+            //What happens on toggle of the corrections
             // @HERE ALREYLZ
             function (active, session) {
 
@@ -194,8 +198,50 @@ export async function renderMap(map,
                     // 1. I need the pi-measurement data
                     // referencePiMeasurePoint
                     // 2. I neeed the rest of the measurements
-                    // 3. Compute bias
 
+                    //3. Compute closest measured value
+                    const closestRealPointToPiMeasurement = nonPiMeasurementPointsForSession.map(realPoint => {
+                        const ownOrigin = session.worldPosition
+
+                        const computedPointWorldCoords = localToGeo(realPoint.x, realPoint.z, ownOrigin.lat, ownOrigin.lon)
+
+                        return {
+                            ...realPoint,
+                            distanceToSeshOrigin: getDistanceInMeters(computedPointWorldCoords.lat, computedPointWorldCoords.lon, ownOrigin.lat, ownOrigin.lon)
+                        }
+                    }
+                    ).sort((a, b) => a.distanceToSeshOrigin - b.distanceToSeshOrigin)[0]; // ← Sort by distance (ascending)
+
+
+
+                    // 3. Compute bias
+                    console.log("COMPARISON VALUE", closestRealPointToPiMeasurement)
+                    console.log("REFERENCE VALUE", piCorrectionPoints[0])
+
+
+                    function diffSharedNumericKeys(obj1, obj2) {
+                        const result = {};
+                        for (const key in obj1) {
+                            if (key in obj2) {
+                                const val1 = Number(obj1[key]);
+                                const val2 = Number(obj2[key]);
+                                if (!isNaN(val1) && !isNaN(val2)) {
+                                    result[key] = val1 - val2;
+
+                                    console.log(`phone(${key}) - ref(${key})`, result)
+                                }
+                            }
+                        }
+                        return result;
+                    }
+
+
+                    const res = diffSharedNumericKeys(closestRealPointToPiMeasurement, piCorrectionPoints[0])
+
+
+
+
+                    console.log("Diff object", res)
 
                 }
 
@@ -263,7 +309,7 @@ export async function renderMap(map,
 
 
     if (RENDER_HEATMAP) {
-        console.log("POINTS (PRE HEATMAP)", points)
+        // console.log("POINTS (PRE HEATMAP)", points)
         // Phone measurements for this session
         const nonPiMeasurementPoints = points.filter(p =>
             p.measurementDevice !== "RaspberryPi4B")
@@ -334,7 +380,7 @@ function renderSession(sessionMapLayer, session, piCorrectionPoint = null, onCor
     // Switch to enable or disable the correction
     const piCorrectionSwitch = SwitchComponent(
         "Raspbi Correction",
-        true,
+        false,
         (ev) => {
             const isOn = ev.target.checked
             alert(`THE SWITCH INPUT IS ${isOn ? "ON" : "OFF"} for session ${session}`)
@@ -564,7 +610,7 @@ function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what t
 
 
 
-    console.log("HEATMAP READY", knownPointsHeatmapReady)
+    // console.log("HEATMAP READY", knownPointsHeatmapReady)
 
 
     //This generates fake points for the heatmap

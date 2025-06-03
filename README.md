@@ -102,22 +102,5 @@ Let's encrpyt certificates to use ciphered traffic have been generated automatic
 
 [![SSL by Certbot](https://img.shields.io/badge/SSL-Certbot-brightgreen?logo=letsencrypt&logoColor=white)](https://certbot.eff.org/)
 
-
-
-
-
-
 ## Future work | ongoing improvements:
-- Integration with IA backend to estimate new points
-- Allow rotation and redefinition of Lat, Lon origins in a per session basis
-- Update estimations so that 
-- Allowing to remap the measurements of a session in batch by moving the origin of measurement manually (to adjust for GPS lack of precision indoors errors).
-- Optimize data loading
 - Properly integrating with AI for heatmap generation (it is extremely slow).
-- Correcting measured values of a session using the "more accurate measurements" of the raspberry.
-
-
-
-
-
-
