@@ -14,8 +14,8 @@
 }
 
 
-*[title]{
-    cursor:zoom-in;
+*[title] {
+    cursor: zoom-in;
 }
 
 ul,
@@ -566,14 +566,14 @@ body:has(.my-load-popup.open),
 
 /* Leaflet custom content stuff */
 
-.tooltip-header{
-    
+.tooltip-header {
+
     font-size: 1.2em;
     font-weight: bolder;
     margin-bottom: 0.2em;
     background-color: rgb(102, 148, 185);
-    border-radius: 12px 12px 0 0 ;
-    color:white;
+    border-radius: 12px 12px 0 0;
+    color: white;
 }
 
 
@@ -606,7 +606,7 @@ body:has(.my-load-popup.open),
 
 
 
-.tooltip-body{
+.tooltip-body {
     display: grid;
     gap: 1em;
 }
@@ -615,8 +615,8 @@ body:has(.my-load-popup.open),
 
 
 .pi-correction-for-session-available {
-    
-    border: 0.1em dashed teal  ;
+
+    border: 0.1em dashed teal;
     border-radius: 12px;
 
     display: grid;
@@ -626,12 +626,55 @@ body:has(.my-load-popup.open),
     justify-items: center;
     text-align: center;
 
-    gap:0.2em;
+    gap: 0.2em;
     flex-wrap: wrap;
     padding: 1em 0.2em;
 
-    .key{
+    .key {
         font-weight: bolder;
     }
 
+}
+
+
+
+
+
+.animated-marker {
+
+    animation: dropFromTop 0.5s ease-out;
+
+}
+
+@keyframes dropFromTop {
+    0% {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInScale {
+    0% {
+        transform: translateY(-50px) scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Style to enable transition */
+.leaflet-heatmap-layer canvas {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+.leaflet-heatmap-layer.canvas-visible canvas {
+  opacity: 1;
 }

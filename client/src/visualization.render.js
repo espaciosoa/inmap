@@ -8,13 +8,13 @@ import {
     from "./geo.utils.js"
 import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox } from "./interpolations.js"
 import { getNaturalLanguageDate } from "./converters.js"
-import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "../../dist/crap.js"
+import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue, getPropertyRange } from "../../dist/crap.js"
 
 import { SwitchComponent } from "./components/switch.component.js"
 
 
 // I am using these to group logically related elements in the map (e.g., all measurements related to a session, the heatmap, etc)
-let layerGroups = []
+export let layerGroups = []
 
 //Plaza mayor
 export const defaultLatLon = { lat: 40.4233828, lon: -3.7121647 }
@@ -29,9 +29,6 @@ function clearMapLayers(map) {
     })
     layerGroups = []
 }
-
-
-
 
 function clearMapLayerByName(map, layerName) {
     layerGroups = layerGroups.filter((layerInfo) => {
@@ -99,6 +96,8 @@ const toMapPointsMapper = (measurement) => {
         ...measurement.fullCellSignalStrength,
         ...measurement.fullCellIdentity,
         timestamp: measurement.timestamp,
+        //This is now passed but is a bad estimation of position
+        worldCoordsNotWorking: measurement.worldCoords,
         sessionId: measurement.measurementSession,
         measurementDevice: measurement.measurementDevice || "ANDROID_PHONE"
     }
@@ -111,7 +110,7 @@ const toMapPointsMapper = (measurement) => {
  * `visCenter`: {lat:X, long:Y} object where the map will have its center
  * points: array of points with the data to paint
  * */
-export function renderMap(map,
+export async function renderMap(map,
     sessions,
     points,
     rotation = 0,
@@ -122,6 +121,8 @@ export function renderMap(map,
 
 
     const SHOW_BBOX = false
+    const RENDER_HEATMAP = true
+
 
     // RESETEO LA POSICIÓN DEL CENTRO DEL MAPA
     visualizationCenter = sessions.length > 0 ? getAverageLatLng(sessions.map(s => s.worldPosition)) : defaultLatLon;
@@ -131,122 +132,151 @@ export function renderMap(map,
     map.setView([visCenter.lat, visCenter.lon])
 
 
+
+
     showPopup("Re-rendering map", "load")
-    setTimeout(() => {
+    console.log("RENDER MAP")
 
 
-        console.log("RENDER MAP")
+    clearMapLayers(map)
 
-        clearMapLayers(map)
+    if (!points || !sessions)
+        return
 
-        if (!points || !sessions)
+    //This reformats the points to have a common interface (kinda)
+    points = points.map(toMapPointsMapper)
+
+    //1. Show visually the estimated centroid of all measured points    
+    //This is the estimated center 
+    // let center = L.circle(visCenter, {
+    //     color: 'black',
+    //     fillOpacity: 1,
+    //     radius: 0.5
+    // })
+    //     .bindPopup(`Estimated visualization center:  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
+
+
+    // layerGroups.push({ name: "Estimated visualization center", layer: center })
+
+    let renderPromisesList = []
+
+
+    const allSessionsLayerGroup = L.layerGroup().addTo(map);
+
+    /* Iterate over sessions and display their data */
+    sessions.forEach(s => {
+
+        if (!s.worldPosition)
             return
 
-        //This reformats the points to have a common interface (kinda)
-        points = points.map(toMapPointsMapper)
+        // Get Rasberry Pi measurements for the session (also order by most recent if there are several assigned to same session)
+        const piCorrectionPoints = points.filter(p =>
+            p.sessionId === s._id && p.measurementDevice === "RaspberryPi4B").sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+
+        // Phone measurements for this session
+        const nonPiMeasurementPointsForSession = points.filter(p =>
+            p.sessionId === s._id && p.measurementDevice !== "RaspberryPi4B")
+
+        const singleSessionLayerGroup = L.layerGroup().addTo(map); // Layer to store session info in a group
+        const singleSessionMeasurementsLayerGroup = L.layerGroup().addTo(map); // Layer to store measurements in a group
 
 
+        //PLOT INFO OF A SPECIFIC SESSION
+        renderSession(singleSessionLayerGroup, s, piCorrectionPoints[0],
+            //What happens on toggle
+            // @HERE ALREYLZ
+            function (active, session) {
 
+                if (active) {
+                    clearMapLayerByName(map, `MeasurementsForSession'${session._id}'`)
+                    clearMapLayerByName(map, `heatmap`)
+                    // Performing estimations
+                    // 1. I need the pi-measurement data
+                    // referencePiMeasurePoint
+                    // 2. I neeed the rest of the measurements
+                    // 3. Compute bias
 
-
-
-
-
-        //1. Show visually the estimated centroid of all measured points    
-        //This is the estimated center 
-        // let center = L.circle(visCenter, {
-        //     color: 'black',
-        //     fillOpacity: 1,
-        //     radius: 0.5
-        // })
-        //     .bindPopup(`Estimated visualization center:  (${visCenter.lat}, ${visCenter.lon} )`).addTo(map)
-
-
-        // layerGroups.push({ name: "Estimated visualization center", layer: center })
-
-
-
-
-        const allSessionsLayerGroup = L.layerGroup().addTo(map);
-
-        /* Iterate over sessions and display their data */
-        sessions.forEach(s => {
-
-            if (!s.worldPosition)
-                return
-
-            // Get Rasberry Pi measurements for the session (also order by most recent if there are several assigned to same session)
-            const piCorrectionPoints = points.filter(p =>
-                p.sessionId === s._id && p.measurementDevice === "RaspberryPi4B").sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-
-            const singleSessionLayerGroup = L.layerGroup().addTo(map);
-            //PLOT INFO OF A SPECIFIC SESSION
-            renderSession(singleSessionLayerGroup, s, piCorrectionPoints[0])
-
-
-
-            // Phone measurements for this session
-            const nonPiMeasurementPointsForSession = points.filter(p =>
-                p.sessionId === s._id && p.measurementDevice !== "RaspberryPi4B")
-
-            if (nonPiMeasurementPointsForSession.length > 0) {
-
-
-                if (SHOW_BBOX) {
-                    // Compute bounding box
-                    const boundingBoxForSessionMeasurements = getLatLongBoundingBox(nonPiMeasurementPointsForSession.map(coord => {
-                        const ownOrigin = s.worldPosition
-                        const thisSessionCoordsAsLatLong = localToGeo(coord.x, coord.z, ownOrigin.lat, ownOrigin.lon)
-                        return { lat: thisSessionCoordsAsLatLong.lat, lon: thisSessionCoordsAsLatLong.lon }
-                    }))
-
-                    const bboxInputToLeaflet = [[boundingBoxForSessionMeasurements.minLat, boundingBoxForSessionMeasurements.minLon],
-                    [boundingBoxForSessionMeasurements.maxLat, boundingBoxForSessionMeasurements.maxLon]]
-
-
-                    const boundingBoxForSessionLayerGroup = L.layerGroup().addTo(map);
-
-                    console.log(`BOUNDING BOX FOR SESSION ${JSON.stringify(boundingBoxForSessionMeasurements)}`, s)
-                    if (bboxInputToLeaflet)
-                        L.rectangle(
-                            bboxInputToLeaflet,
-                            { color: "#ff7800", weight: 0.1 }).addTo(boundingBoxForSessionLayerGroup);
 
                 }
 
+                //RERENDER 
+                renderMeasurementsForSession(singleSessionMeasurementsLayerGroup, session, nonPiMeasurementPointsForSession, whatToDisplay, 0,
 
-                const singleSessionMeasurementsLayerGroup = L.layerGroup().addTo(map);
-                //PLOT MEASUREMENTS FOR A SPECIFIC SESSION
-                renderMeasurementsForSession(singleSessionMeasurementsLayerGroup, s, nonPiMeasurementPointsForSession, whatToDisplay)
+                )
+                renderHeatmap(map, sessions, points.filter(p => p.measurementDevice !== "RaspberryPi4B"), whatToDisplay)
+                //RE-REFRESH ALSO THE HEATMAP
 
-                singleSessionLayerGroup.addTo(singleSessionMeasurementsLayerGroup)
+
 
             }
 
-            //add to layers for then removal
-            layerGroups.push({ name: `SingleSessionLayer ${s._id}`, layer: singleSessionLayerGroup })
-            //Add single session layer to layer group
+        )
 
-            allSessionsLayerGroup.addLayer(singleSessionLayerGroup)
-        })
+
+
+        if (nonPiMeasurementPointsForSession.length > 0) {
+
+
+            if (SHOW_BBOX) {
+                // Compute bounding box
+                const boundingBoxForSessionMeasurements = getLatLongBoundingBox(nonPiMeasurementPointsForSession.map(coord => {
+                    const ownOrigin = s.worldPosition
+                    const thisSessionCoordsAsLatLong = localToGeo(coord.x, coord.z, ownOrigin.lat, ownOrigin.lon)
+                    return { lat: thisSessionCoordsAsLatLong.lat, lon: thisSessionCoordsAsLatLong.lon }
+                }))
+
+                const bboxInputToLeaflet = [[boundingBoxForSessionMeasurements.minLat, boundingBoxForSessionMeasurements.minLon],
+                [boundingBoxForSessionMeasurements.maxLat, boundingBoxForSessionMeasurements.maxLon]]
+
+
+                const boundingBoxForSessionLayerGroup = L.layerGroup().addTo(map);
+
+                console.log(`BOUNDING BOX FOR SESSION ${JSON.stringify(boundingBoxForSessionMeasurements)}`, s)
+                if (bboxInputToLeaflet)
+                    L.rectangle(
+                        bboxInputToLeaflet,
+                        { color: "#ff7800", weight: 0.1 }).addTo(boundingBoxForSessionLayerGroup);
+
+            }
+
+
+
+            //PLOT MEASUREMENTS FOR A SPECIFIC SESSION
+            const pointRenderingPromise = renderMeasurementsForSession(singleSessionMeasurementsLayerGroup, s, nonPiMeasurementPointsForSession, whatToDisplay)
+            renderPromisesList.push(pointRenderingPromise)
+            console.log("promse rendering", pointRenderingPromise)
+
+            singleSessionLayerGroup.addTo(singleSessionMeasurementsLayerGroup)
+
+        }
 
         //add to layers for then removal
-        layerGroups.push({ name: "AllSessionsLayer", layer: allSessionsLayerGroup })
+        layerGroups.push({ name: `SingleSessionLayer ${s._id}`, layer: singleSessionLayerGroup })
+        //Add single session layer to layer group
+
+        allSessionsLayerGroup.addLayer(singleSessionLayerGroup)
+    })
+
+    //add to layers for then removal
+    layerGroups.push({ name: "AllSessionsLayer", layer: allSessionsLayerGroup })
 
 
 
-
+    if (RENDER_HEATMAP) {
         console.log("POINTS (PRE HEATMAP)", points)
+        // Phone measurements for this session
+        const nonPiMeasurementPoints = points.filter(p =>
+            p.measurementDevice !== "RaspberryPi4B")
 
-        // renderHeatmap(map, sessions, nonPiMeasurementPoints, whatToDisplay);
+        console.log(nonPiMeasurementPoints)
+        renderHeatmap(map, sessions, nonPiMeasurementPoints, whatToDisplay);
+    }
 
-        console.log("MAP LAYERS", layerGroups)
+    console.log("MAP LAYERS", layerGroups)
 
+    await Promise.all(renderPromisesList)
 
-        console.warn("THIS SHOULD WAIT FOR THE NEXT ANIMATION FRAME. WHEN THE MAP IS DONE RENDERING")
-
-        destroyPopup(); // after rendering finishes
-    }, 0);
+    destroyPopup()
 
 }
 
@@ -302,7 +332,9 @@ function renderSession(sessionMapLayer, session, piCorrectionPoint = null, onCor
             </div>
         `
     // Switch to enable or disable the correction
-    const piCorrectionSwitch = SwitchComponent("Raspbi Correction",
+    const piCorrectionSwitch = SwitchComponent(
+        "Raspbi Correction",
+        true,
         (ev) => {
             const isOn = ev.target.checked
             alert(`THE SWITCH INPUT IS ${isOn ? "ON" : "OFF"} for session ${session}`)
@@ -416,7 +448,13 @@ function renderSession(sessionMapLayer, session, piCorrectionPoint = null, onCor
 }
 
 
-function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measurements, whatToDisplay, rotation = 0) {
+
+
+function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measurements, whatToDisplay, rotation = 0, correction = null) {
+
+
+    const renderPromises = []
+
 
     // DISPLAY POINTS
     measurements.forEach(c => {
@@ -457,21 +495,31 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
             return
         }
 
-        //Represents a measurement
-        let measurementPointInMap = L.circle(latLongCoords, {
-            color:
-                getPropertyColorForValue(whatToDisplay, c[whatToDisplay]),
-            fillOpacity: 0.5,
-            radius: 0.05
+
+        const promise = new Promise(resolve => {
+            setTimeout(() => {
+
+                //Represents a measurement
+                let measurementPointInMap = L.circle(latLongCoords, {
+                    className: 'animated-marker',
+                    color:
+                        getPropertyColorForValue(whatToDisplay, c[whatToDisplay]),
+                    fillOpacity: 0.5,
+                    radius: 0.05
+                })
+                    .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}`)
+                    .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
+
+                resolve(); // mark this point as rendered
+            }, 1)
         })
-            .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}`)
-            .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
+
+        renderPromises.push(promise);
     })
-
-
     //add to list of layered info, so that re-rendering on change origin can move printed 
     layerGroups.push({ name: `MeasurementsForSession'${session._id}'`, layer: theseMeasurementsMapLayer })
 
+    return Promise.all(renderPromises)
 }
 
 
@@ -480,9 +528,13 @@ let zoomListener = null;
 function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what to display */) {
 
 
+
     // Give shape as {lat: -- . lon: -- , value: --}
-    const knownPointsHeatmapReady = nonPiMeasurementPoints.map(c => {
-        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0].worldPosition
+    const knownPointsHeatmapReady = nonPiMeasurementPoints.flatMap(c => {
+        const ownOrigin = sessions.filter(s => s._id === c.sessionId)[0]?.worldPosition
+
+        if (ownOrigin == undefined) return []
+
         const localRoomCoordsAsLatLong = localToGeo(c.x, c.z, ownOrigin.lat, ownOrigin.lon)
         return {
             ...localRoomCoordsAsLatLong, value: c[valueKey] //c.dbm
@@ -544,10 +596,14 @@ function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what t
     // }
     // )
 
+
+
+    const propertyRange = getPropertyRange(valueKey)
+
     // Heatmap js requires this type of input
     const HMPoints = {
-        max: knownPointsHeatmapReady.reduce((max, obj) => obj.value > max ? obj.value : max, -Infinity),
-        min: knownPointsHeatmapReady.reduce((min, obj) => obj.value < min ? obj.value : min, Infinity),
+        max: propertyRange.max ?? knownPointsHeatmapReady.reduce((max, obj) => obj.value > max ? obj.value : max, -Infinity),
+        min: propertyRange.min ?? knownPointsHeatmapReady.reduce((min, obj) => obj.value < min ? obj.value : min, Infinity),
         data: knownPointsHeatmapReady
     };
 
@@ -557,16 +613,22 @@ function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what t
     const heatmapLayer = new HeatmapOverlay(heatmapConfig);
 
 
-
     //Heatmap layer should be showing
     heatmapLayer.setData(HMPoints)
+
     heatmapLayer.addTo(map)
+
+    // Wait for canvas to be created and then trigger fade-in
+    setTimeout(() => {
+        const canvasLayer = document.querySelector('.leaflet-heatmap-layer');
+        if (canvasLayer) {
+            canvasLayer.classList.add('canvas-visible');
+        }
+    }, 50); // small delay to ensure DOM is ready
 
 
     console.log("HEATMAP LAYER", heatmapLayer)
     layerGroups.push({ name: "heatmap", layer: heatmapLayer })
-
-
 
 
     function handleConstantSizeHeatmapRegardlessOfZoom() {

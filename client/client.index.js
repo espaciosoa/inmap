@@ -28,16 +28,16 @@ import { initPopup } from "./src/popup.js"
 import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "./dist/crap.js"
 import { PageState } from "./dist/PageState.js"
 import { initLeafletMapWithProviders } from "./src/leaflet.map.utils.js"
-import { defaultLatLon, renderMap } from "./src/visualization.render.js"
+import { defaultLatLon, renderMap, layerGroups } from "./src/visualization.render.js"
 
-const [showPopup, hidePopup] = initPopup()
+const [showPopup, hidePopup, destroyPopup] = initPopup()
 
-showPopup("Loading data from API", "load")
+showPopup("Loading initial data from API", "load")
 
 console.groupCollapsed("API Rest Data first load of Rooms: 📱📏📶📱📏📶📱📏📶")
-showPopup("Loading rooms", "load")
+showPopup("Loading intial rooms", "load")
 const allRooms = await getRooms();
-hidePopup()
+destroyPopup()
 
 console.log("🏠 ROOMS ", allRooms);
 console.groupEnd()
@@ -73,6 +73,7 @@ catch (error) {
 // SUPER IMPORTANT
 // FETCHING  FUNCTIONS
 const fetchMeasurementsIntoState = async () => {
+    const [showPopup, hidePopup, destroyPopup] = initPopup()
     showPopup("Loading measurements...", "load")
     const activeSessionIds = myState.activeSessions.map(s => s._id)
     const measurementArrays = await Promise.all(
@@ -81,14 +82,15 @@ const fetchMeasurementsIntoState = async () => {
         )
     );
     myState.activeMeasurements = measurementArrays.flat()
-    hidePopup()
+    destroyPopup()
 }
 
 const fetchSessionsIntoState = async () => {
+    const [showPopup, hidePopup, destroyPopup] = initPopup()
     showPopup("Loading sessions...", "load")
     const associatedSessionsFromEndpoint = (await getSessionsForRoom(myState.activeRoom._id)).data
     myState.activeSessions = associatedSessionsFromEndpoint
-    hidePopup()
+    destroyPopup()
 
 }
 //----------------
@@ -371,6 +373,8 @@ map.on("dblclick", (e) => {
                                 </footer>
                                 </div>`
 
+
+
     const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
         {
             title: `Estimated point ${Number.isNaN(estimated) ? "Couldn't compute" : ""} `,
@@ -378,6 +382,8 @@ map.on("dblclick", (e) => {
             unit: !Number.isNaN(estimated) ? getPropertyUnit(myState.visualizingProperty) : ""
         })
 
+
+    const nonPersistentEstimationsLayer = L.layerGroup().addTo(map);
 
 
     //Create a circle to show the estimated point visually
@@ -387,15 +393,25 @@ map.on("dblclick", (e) => {
         radius: 0.05,
         className: "estimated-point"
     })
-        .bindTooltip(`${myState.visualizingProperty} :  ${estimated.toFixed(2)} ${getPropertyUnit(myState.visualizingProperty)}`)
+        .bindTooltip(
+            !Number.isNaN(estimated) ?
+                `${myState.visualizingProperty} :  ${estimated.toFixed(2)} ${getPropertyUnit(myState.visualizingProperty)}` :
+                "Invalid estimation"
+        )
         .bindPopup(popupDataForItemReplaced)
-        .addTo(map)
+        .addTo(nonPersistentEstimationsLayer)
         .openPopup()
 
+
+
+    layerGroups.push({ name: `Estimations layer for room ${myState.activeRoom}`, layer: nonPersistentEstimationsLayer })
 
     //Remove if it wasn't allowed
     if (Number.isNaN(estimated))
         setTimeout(() => estimatedPoint.remove(), 2000)
+
+
+
 
 
 
