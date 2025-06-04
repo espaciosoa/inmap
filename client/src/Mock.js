@@ -466,7 +466,3 @@ function getRandomDbm(){
    return Math.random()*-100
    // 0 to -100
 }
-
-export function shit() {
-   console.log("SHIT")
-}

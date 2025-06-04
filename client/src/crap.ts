@@ -94,21 +94,35 @@ const ranges = new Map<NumericProperty, Range>([
         max: 30
     }],
 
-    // //5G
-    // ['csiRsrp', 'dBm'],
+    // 5G
+    ['csiRsrp', {
+        min: -156,
+        max: -31
+    }],
+    // Channel State Information (CSI) Channel Quality Indicator (CQI) Table
     // ['csiCqiTableIndex', '?'],
-    // ['csiRsrq', 'dBm'],
-    // ['csiSinr', 'dBm'],
-    // ['ssRsrp', 'dBm'],
-    // ['ssRsrq', 'dBm'],
-    // ['ssSinr', 'dBm']
+    ['csiRsrq', {
+        min: -20,
+        max: -3
+    }],
+    ['csiSinr', {
+        min: -23,
+        max: 23
+    }],
+    ['ssRsrp', {
+        min: -156,
+        max: -31
+    }],
+    ['ssRsrq', {
+        min: -43,
+        max: 20
+    }],
+    ['ssSinr', {
+        min: -23,
+        max: 40
+    }]
 ]
 )
-
-
-
-
-
 
 export function getPropertyUnit(signalPropertyName: NumericProperty): string {
     return units.get(signalPropertyName)!!
@@ -117,6 +131,16 @@ export function getPropertyUnit(signalPropertyName: NumericProperty): string {
 export function getPropertyRange(signalPropertyName: NumericProperty): Range | undefined {
     return ranges.get(signalPropertyName)
 }
+
+/**
+ * Given a property name and a value for such property tells if it is in the range of valid values
+ */
+export function isSignalPropertyInRange(signalPropertyName: NumericProperty, value: number): boolean {
+    const { min, max } = ranges.get(signalPropertyName)!!
+    return value >= min && value <= max
+}
+
+
 
 
 
@@ -130,7 +154,7 @@ export function getFilterablePropertiesList(type: "5G" | "4G"): Array<string> {
         return units.keys().toArray().filter((v) => !FiveG_Only_Props.includes(v))
     else if (type === "5G")
         return units.keys().toArray().filter((v) => !FourG_Only_Props.includes(v))
-    else 
+    else
         throw new Error("Unsupported type passed to getFilterablePropertiesList")
 }
 
@@ -244,9 +268,6 @@ export const interpolateColor = (value: number, breakpoints: ColorBreakpoint[]):
     // Return as hex string
     return rgbToHex(r, g, b);
 };
-
-
-
 
 export function getNormalizedValueInRange(value: number, min: number, max: number) {
     return ((value - min) / (max - min));

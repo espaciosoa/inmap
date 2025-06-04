@@ -35,10 +35,9 @@ const [showPopup, hidePopup, destroyPopup] = initPopup()
 showPopup("Loading initial data from API", "load")
 
 console.groupCollapsed("API Rest Data first load of Rooms: 📱📏📶📱📏📶📱📏📶")
-showPopup("Loading intial rooms", "load")
+showPopup("Loading initial rooms", "load")
 const allRooms = await getRooms();
 destroyPopup()
-
 console.log("🏠 ROOMS ", allRooms);
 console.groupEnd()
 
@@ -47,7 +46,7 @@ console.groupEnd()
 
 
 
-// Encapsulating State of the page in an object
+// Encapsulating State of the page in an object with custom event listeners on change (pub/sub scheme)
 let myState = null
 
 try {
@@ -68,6 +67,7 @@ try {
 }
 catch (error) {
     console.error("Error initing the state")
+
 }
 
 // SUPER IMPORTANT
@@ -90,7 +90,14 @@ const fetchSessionsIntoState = async () => {
     showPopup("Loading sessions...", "load")
     const associatedSessionsFromEndpoint = (await getSessionsForRoom(myState.activeRoom._id)).data
     myState.activeSessions = associatedSessionsFromEndpoint
+
+
+    if (!myState.activeSessions || myState.activeSessions.length == 0)
+        showPopup("No sessions left for this room", "info")
+
     destroyPopup()
+
+
 
 }
 //----------------
@@ -111,10 +118,10 @@ if (myState !== null) {
     showRoomsAsSelectOptions(roomOptionsSelect, myState, allRooms, myState.activeRoom)
     showSessionsAsCheckboxes(sessionsCheckboxContainer, myState,
         myState.activeSessions.map(s => s), myState.activeSessions)
-    showStateInformationSection(myState)
+
 
     await fetchMeasurementsIntoState();
-
+    showStateInformationSection(myState)
     // Show tables at the bottom
     showRoomAsTable(ROOM_DIV,
         myState.activeRoom
@@ -127,6 +134,7 @@ if (myState !== null) {
         myState.activeMeasurements,
         fetchMeasurementsIntoState
     )
+
 
 
     myState.activeSessions ?? showPopup("The selected room has no corresponding sessions")
@@ -287,6 +295,7 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
             document.querySelector("#map"),
             "Select some data so that the map can plot measurements ")
         mapAllowInteraction(map, false)
+        showMeasurementsAsTable(MEASUREMENTS_DIV) 
         return
     }
     else {

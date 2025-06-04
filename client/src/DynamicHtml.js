@@ -258,23 +258,30 @@ const cellHTML_template = ` <div class="editable-cell">
 // Opts allows to specify some keys as editable
 
 function createTableFromObject(data, lastKey = "", opts = {
-    editableKeys: ["lat", "long"],
+    editableKeys: ["lat", "lon"],
     validateValues: null,
 
 }) {
 
-
-
-
-
     if (DEBUG) console.groupCollapsed("createTableFromObject")
 
+
+
+
     const elem = document.createElement("div");
-    elem.classList.add("inner-object");
+    elem.classList.add("inner-object")
+    elem.classList.add("collapsible")
+    elem.classList.add("collapsed")
+
+    //añadir desplegable sencillito a los objetos internos
+    elem.onclick = () => {
+        elem.classList.toggle("collapsed")
+    }
 
     const kvPairs = Object.entries(data);
 
     for (const [key, value] of kvPairs) {
+
         let kvItemHTML = document.createElement("div");
 
 
@@ -285,6 +292,11 @@ function createTableFromObject(data, lastKey = "", opts = {
 
         //If is object then, further decompose, keeping track of keypath
         if (isObject(valueAux)) {
+
+            //Avoid rendering extra elem if is an empty array
+            if (Object.keys(valueAux).length === 0)
+                continue
+
             const subElem = createTableFromObject(valueAux, `
                 ${lastKey}.${key}`,
                 opts);
@@ -358,6 +370,7 @@ function createTableFromArray(data,
         handleDelete: null,
         // (takes key, value) and returns the value to be set
         validateValues: null,
+        keysBlacklist: ["roomOwner"]
     }) {
 
     if (!Array.isArray(data) || data.length === 0) {
@@ -376,7 +389,8 @@ function createTableFromArray(data,
 
     // Create table headers from keys of first object
     const keys = Object.keys(data[0]);
-    keys.forEach(key => {
+    keys.filter((k) => !opts.keysBlacklist || !opts.keysBlacklist.includes(k)).forEach(key => {
+
         const th = document.createElement('th');
         th.textContent = key;
         headerRow.appendChild(th);
@@ -399,7 +413,7 @@ function createTableFromArray(data,
 
 
         //Create a row for each array element (that should be an object)
-        keys.forEach(key => {
+        keys.filter((k) => !opts.keysBlacklist || !opts.keysBlacklist.includes(k)).forEach(key => {
             const td = document.createElement('td');
             td.classList.add("table-cell")
 
@@ -464,6 +478,7 @@ function createTableFromArray(data,
                     td.textContent = `${obj[key]}`;
                 }
             } else {
+
                 td.replaceChildren(createTableFromObject(obj[key], key, opts));
             }
 
@@ -476,7 +491,7 @@ function createTableFromArray(data,
 
 
             const replacements = {
-                saveText: "Save 💾",
+                saveText: "Update 💾",
                 deleteText: "Delete 🗑️",
                 // Passed as parameters to the function
                 handleSave: () => opts.handleSave(obj) ?? function (ev) { console.warn("This 'handleDelete' handler  was not assigned ", obj) },
@@ -521,23 +536,18 @@ function createTableFromArray(data,
 
 // ACTUALLY SHOWING THE TABLES
 export function showMeasurementsAsTable(parent, measurements, refetchLogic) {
-    const measurementsCopy = structuredClone(measurements)
 
+
+    const measurementsCopy = structuredClone(measurements)
     parent.replaceChildren(
         createTableFromArray(
             measurementsCopy,
             //Parameters for the table
             {
+                keysBlacklist: ["measurementSession", "signalMeasurement", "version", "sessionId"],
                 editableKeys: ["lat", "lon"],
                 handleSave: null,
-                // Old 
-                // async (obj) => {
-                //     alert(`TODO MEASUREMENTS PUT`)
-                //     //Replace me with just fetching
 
-                //     await refetchLogic()
-                //     // window.location.reload(true);
-                // },
                 handleDelete: async (obj) => {
 
                     const confirmed = window.confirm("Are you sure you want to proceed?")
@@ -567,7 +577,8 @@ export function showRoomAsTable(parent, room) {
         createTableFromArray(
             [roomCopy],
             {
-                editable: false
+                editable: false,
+                keysBlacklist: ["version"]
             }
             //Parameters for the table
             // {
@@ -595,6 +606,7 @@ export function showSessionsAsTables(parent, sessions, refetchLogic) {
             sessionsCopy,
             //Parameters for the table
             {
+                keysBlacklist: ["version", "roomId", "sessionId"],
                 editable: true,
                 editableKeys: ["lat", "lon"],
                 //Attepmt to validate values before submission
@@ -634,8 +646,10 @@ export function showSessionsAsTables(parent, sessions, refetchLogic) {
 
                     //SHOW MODAL HERE
                     const result = await deleteSession(obj._id)
+
+
                     //SHOW MODAL HERE
-                    alert("Session deleted")
+                    alert("Session deleted successfully")
                     await refetchLogic()
                     // window.location.reload(true);
 

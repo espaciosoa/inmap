@@ -124,7 +124,7 @@ export async function renderMap(map,
     const [showPopup, hidePopup, destroyPopup] = initPopup()
 
 
-    const SHOW_BBOX = false
+    const SHOW_BBOX = true
     const RENDER_HEATMAP = true
 
 
@@ -236,12 +236,20 @@ export async function renderMap(map,
                     }
 
 
+                    //phone.pci should be the same as pi.pcid (it is the cell id)
+                    //earfcn should also be the same
+
+                    // rssi of both (check valid values)
+
+
+
                     const res = diffSharedNumericKeys(closestRealPointToPiMeasurement, piCorrectionPoints[0])
 
 
 
 
                     console.log("Diff object", res)
+                    alert("Missing tests with 5G")
 
                 }
 
