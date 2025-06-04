@@ -37,51 +37,68 @@
     <header class="header">
         <div>
             <img src="favicon.png">
-            <h1> Measurements.espaciosoa | 5G measurements </h1>
+            <h1> measurements.espaciosoa | LTE/5G </h1>
         </div>
         <form action="/logout" method="POST"> <button type="submit" class="logout-button"> Logout</button></form>
     </header>
     <main>
 
 
-        <section class="howto-section collapsible" >
-            <h2>How to ❓</h2>
+        <section class="howto-section collapsible collapsed">
+            <h2>How to measurements.espaciosoa ❓</h2>
+            <img width="300px" style="margin:0 auto;" class="cropped-circle" src="/assets/how-to/map-showing.png" />
+
             <ul class="feature-list">
                 <li>Visualize 5G measurements taken indoors within a defined environment (referred to as a "room" in the
                     application). A heatmap is generated using data collected from both mobile devices and Raspberry Pi
                     units configured for high-precision measurements.</li>
                 <li>Select which measurement sessions to display by using the checkboxes available in the "Measured
-                    Sessions" selector panel.</li>
-                <li>Inspect detailed information for a specific measurement session and optionally enable correction of
-                    Pi-based measurements to estimate potential measurement error, using the Raspberry Pi as a reference
-                    device. This can be toggled via the slider in the session's popup.</li>
-                <li>Switch between different measurement parameters to display on the map using the dropdown menu
-                    located on the left-hand side of the map view.</li>
+                    Sessions" selector panel.
+                    <img class="inline-image" src="/assets/how-to/single-session-display.png" />
+                </li>
                 <li>Access session details by clicking on the session markers on the map, which represent the global
-                    coordinate origin for each session.</li>
-                <li><img class="inline-image" src="/assets/how-to/zoom.png"> Use zoom and pan gestures to navigate and explore the map-based visualization. </li>
+                    coordinate origin for each session. Inspect detailed information for a specific measurement session
+                    and optionally enable correction of
+                    Pi-based measurements to estimate potential measurement error, using the Raspberry Pi as a reference
+                    device. This can be toggled via the slider in the session's popup.
+                    <div class="inline-image-group">
+                        <img class="inline-image" src="/assets/how-to/marker-session.png" />
+                        <img src="/assets/how-to/raspbi-correction.png" />
+                    </div>
+                </li>
+                <li>Switch between different measurement parameters to display on the map using the dropdown menu
+                    located on the left-hand side of the map view. <img src="/assets/how-to/property-visualized.png" />
+                </li>
+                <li><img class="inline-image" src="/assets/how-to/zoom.png"> Use zoom and pan gestures to navigate and
+                    explore the map-based visualization. </li>
                 <li>Double-click on any point of the map to trigger estimations based on the currently available
-                    measurement data.</li>
+                    measurement data.
+                    <img class="cropped-circle" max-width="200px" src="/assets/how-to/estimated_point_interaction.gif" />
+                </li>
                 <li>Manually edit the global origin coordinates (latitude and longitude) of a session via the tables
-                    below if improved accuracy is required for your application.</li>
-                <li>Delete individual measurements or entire measurement sessions to maintain a clean and relevant
-                    dataset.</li>
-                <li>Toggle between different base map tile providers via the map settings menu located in the top-right
-                    corner of the map interface.</li>
+                    below if improved accuracy is required for your application. Delete individual measurements or entire measurement sessions to maintain a clean and relevant
+                    dataset.
+                    <div class="inline-image-group">
+                        <img src="/assets/how-to/lat_long.png" />
+                        <img src="/assets/how-to/update_delete.png" />
+                    </div>
+                </li>
+                <li> Toggle between different base map tile providers via the map settings menu located in the top-right
+                    corner of the map interface. <img class="inline-image"  src="/assets/how-to/map-layers.png" /></li>
             </ul>
 
         </section>
 
         <form class="what-to-plot-selection">
             <div class="border room-choose-container scrollable-max-size">
-                <label>Choose a room to visualize:</label>
+                <label class="text-big">Choose a <span class="bold">room</span> to visualize:</label>
                 <select data-dynamic="roomsSelect">
                     <option>Select a room to visualize</option>
                 </select>
             </div>
 
             <div class="box-positioned border">
-                <header class="overlapping-box-header">Measured Sessions</header>
+                <header class="text-big overlapping-box-header">Measured Sessions</header>
                 <div class="scrollable-max-size">
                     <ul class="session-choose " data-dynamic="sessions">
                         <!--THIS IS FILLED DYNAMICALLY-->

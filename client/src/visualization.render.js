@@ -124,7 +124,7 @@ export async function renderMap(map,
     const [showPopup, hidePopup, destroyPopup] = initPopup()
 
 
-    const SHOW_BBOX = true
+    const SHOW_BBOX = false
     const RENDER_HEATMAP = true
 
 

@@ -36,7 +36,9 @@ body {
 }
 
 
-
+.text-big{
+    font-size: 1.5em;
+}
 
 
 .header,
@@ -179,11 +181,13 @@ a:visited {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 3em;
-    /* grid-template-rows: 10vh; */
-
     padding: 1em;
+}
 
-
+@media screen and (max-width: 480px) {
+    .what-to-plot-selection {
+        grid-template-columns: 1fr;
+    }
 }
 
 
@@ -227,10 +231,12 @@ a:visited {
 
 
 
+
 .room-choose-container.room-choose-container {
     align-items: center;
 
     select {
+        border-radius: 1em;
         max-width: 90%;
     }
 }
@@ -245,10 +251,18 @@ a:visited {
 }
 
 
+.session-choose{
+    display:grid;
+    gap:1em;
+    align-items: center;
+    justify-items: center;
+}
+
 .session-item {
     display: flex;
     flex-direction: row-reverse;
     gap: 0.5em;
+    width: 100%;
 }
 
 
@@ -258,7 +272,7 @@ input[type="checkbox"] {
 
 .session-name {
     font-style: italic;
-    font-weight: bold;
+    font-weight: bold;  
     color: #5ad8ff;
 }
 
@@ -690,16 +704,20 @@ body:has(.my-load-popup.open),
 
 
 section.collapsible {
-    max-height: 2em;
+    height: 3em;
     cursor: pointer;
-    transition: max-height 0.3s ease;
-    overflow: hidden;
+    transition: height 0.3s ease;
 
+    overflow: hidden;
+    transition: transform 0.3s ease;
 }
+
+
 
 section.collapsible:not(.collapsed) {
     content: "▲";
-    max-height: max-content;
+    height: max-content;
+
 }
 
 
@@ -738,10 +756,12 @@ section.collapsible:not(.collapsed)::after {
     text-align: left;
     background-color: #3d3d3d4f;
 
-    padding: 0em 1em;
-
     h2 {
-        margin: 1em;
+        all:unset;
+        text-align: center;
+        margin: 0 1em;
+        padding:1em 0;
+        font-size: 2em;
     }
 
     .feature-list {
@@ -774,17 +794,29 @@ section.collapsible:not(.collapsed)::after {
     .feature-list li {
         .inline-image {
             max-height: min-content;
+            display: inline;
         }
 
+
         display: grid;
-        grid-template-columns: 1fr 0.3fr;
+        /* grid-template-columns:  40px 1fr; */
         width: 100%;
         justify-items: center;
+        /*align-content: center; */
+        justify-content: space-evenly;
         align-items: center;
 
-        
-        
     }
 
 
+}
+
+
+.inline-image-group{
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.cropped-circle{
+    border-radius: 50%;
 }

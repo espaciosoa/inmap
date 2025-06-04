@@ -420,18 +420,13 @@ map.on("dblclick", (e) => {
         setTimeout(() => estimatedPoint.remove(), 2000)
 
 
-
-
-
-
     console.groupEnd()
 })
 
 
 
-document.querySelectorAll(".collapsible").forEach(element => {
+document.querySelectorAll("section.collapsible").forEach(element => {
     element.addEventListener("click", () => {
-        alert('should toggle collapse')
         element.classList.toggle('collapsed')
     })
 
