@@ -51,7 +51,7 @@ let myState = null
 
 try {
 
-    const DEFAULT_ROOM_IDX = allRooms.length - 1
+    const DEFAULT_ROOM_IDX = 13 //allRooms.length - 1
 
     const sessionsForDefaultRoom = (await getSessionsForRoom(allRooms[DEFAULT_ROOM_IDX]._id)).data
     console.log("📱📏 SESSIONS ", sessionsForDefaultRoom)

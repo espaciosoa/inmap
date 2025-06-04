@@ -8,7 +8,7 @@ import {
     from "./geo.utils.js"
 import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox } from "./interpolations.js"
 import { getNaturalLanguageDate } from "./converters.js"
-import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue, getPropertyRange } from "../../dist/crap.js"
+import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue, getPropertyRange, isSignalPropertyInRange } from "../../dist/crap.js"
 
 import { SwitchComponent } from "./components/switch.component.js"
 
@@ -189,9 +189,15 @@ export async function renderMap(map,
         renderSession(singleSessionLayerGroup, s, piCorrectionPoints[0],
             //What happens on toggle of the corrections
             // @HERE ALREYLZ
-            function (active, session) {
+            async function (active, session) {
+
+
+
 
                 if (active) {
+
+                    let endCorrectionObject = null
+
                     clearMapLayerByName(map, `MeasurementsForSession'${session._id}'`)
                     clearMapLayerByName(map, `heatmap`)
                     // Performing estimations
@@ -238,27 +244,48 @@ export async function renderMap(map,
 
                     //phone.pci should be the same as pi.pcid (it is the cell id)
                     //earfcn should also be the same
-
                     // rssi of both (check valid values)
 
-
-
-                    const res = diffSharedNumericKeys(closestRealPointToPiMeasurement, piCorrectionPoints[0])
-
+                    // const diffObj = diffSharedNumericKeys(closestRealPointToPiMeasurement, piCorrectionPoints[0])
 
 
 
-                    console.log("Diff object", res)
-                    alert("Missing tests with 5G")
+                    try {
+
+                        endCorrectionObject = {
+                            rssi:
+                                //Check that if any of them is not range, show NAN
+                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rssi, "rssi") || !isSignalPropertyInRange(piCorrectionPoints[0].rssi, "rssi") ?
+                                    Number.NaN : closestRealPointToPiMeasurement.rssi - piCorrectionPoints[0].rssi,
+                            rsrp:
+                                //Check that if any of them is not range, show NAN
+                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rsrp, "rsrp") || !isSignalPropertyInRange(piCorrectionPoints[0].rsrp, "rsrp") ?
+                                    Number.NaN : closestRealPointToPiMeasurement.rsrp - piCorrectionPoints[0].rsrp,
+                            rsrq:
+                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rsrq, "rsrq") || !isSignalPropertyInRange(piCorrectionPoints[0].rsrq, "rsrq") ?
+                                    Number.NaN : closestRealPointToPiMeasurement.rsrq - piCorrectionPoints[0].rsrq,
+                        }
+
+                    }
+                    catch (error) {
+                        console.error(`couldn't compute correction object . ${JSON.stringify(endCorrectionObject)}`, error.message)
+                    }
+
+
+                    console.warn("The corrections are really not relevant but I can't make a fully featured estimation system assuming I have only a single point to be used as source of truth xD. Blame Espaciosoa.")
+
+                    //THIS LINE DOWN SHOULDNT BE HERE BUT I CANT FIGURE OUT THE PROBLEM
+                    const singleSessionMeasurementsLayerGroup = L.layerGroup().addTo(map); // Layer to store measurements in a group
+                    await setTimeout(async () => {
+                        //RERENDER 
+                        await renderMeasurementsForSession(singleSessionMeasurementsLayerGroup, session, nonPiMeasurementPointsForSession, whatToDisplay, 0,
+                            endCorrectionObject
+                        )
+                        await renderHeatmap(map, sessions, points.filter(p => p.measurementDevice !== "RaspberryPi4B"), whatToDisplay)
+                        //RE-REFRESH ALSO THE HEATMAP
+                    }, 1000)
 
                 }
-
-                //RERENDER 
-                renderMeasurementsForSession(singleSessionMeasurementsLayerGroup, session, nonPiMeasurementPointsForSession, whatToDisplay, 0,
-
-                )
-                renderHeatmap(map, sessions, points.filter(p => p.measurementDevice !== "RaspberryPi4B"), whatToDisplay)
-                //RE-REFRESH ALSO THE HEATMAP
 
 
 
@@ -300,7 +327,9 @@ export async function renderMap(map,
             renderPromisesList.push(pointRenderingPromise)
             console.log("promse rendering", pointRenderingPromise)
 
-            singleSessionLayerGroup.addTo(singleSessionMeasurementsLayerGroup)
+
+
+            singleSessionLayerGroup.addLayer(singleSessionMeasurementsLayerGroup) //CONFUSING ALEJANDRO prev addTo
 
         }
 
@@ -308,7 +337,7 @@ export async function renderMap(map,
         layerGroups.push({ name: `SingleSessionLayer ${s._id}`, layer: singleSessionLayerGroup })
         //Add single session layer to layer group
 
-        allSessionsLayerGroup.addLayer(singleSessionLayerGroup)
+        allSessionsLayerGroup.addLayer(singleSessionLayerGroup)//CONFUSING ALEJANDRO
     })
 
     //add to layers for then removal
@@ -391,7 +420,7 @@ function renderSession(sessionMapLayer, session, piCorrectionPoint = null, onCor
         false,
         (ev) => {
             const isOn = ev.target.checked
-            alert(`THE SWITCH INPUT IS ${isOn ? "ON" : "OFF"} for session ${session}`)
+            // alert(`THE SWITCH INPUT IS ${isOn ? "ON" : "OFF"} for session ${session}`)
             onCorrectionToggle?.(isOn, session)
         })
 
@@ -504,8 +533,9 @@ function renderSession(sessionMapLayer, session, piCorrectionPoint = null, onCor
 
 
 
-function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measurements, whatToDisplay, rotation = 0, correction = null) {
+function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measurements, whatToDisplay, rotation = 0, correctionObj = null) {
 
+    console.log(`RENDERING MEASUREMENTS FOR SESSION ${JSON.stringify(correctionObj)}`)
 
     const renderPromises = []
 
@@ -528,7 +558,35 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
 
         const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
 
-        const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholders(popupDataForItem,
+
+
+        const restSignalDataAndCorrectionComponentIfMakesSense = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(`
+            <span>  
+            
+                {{rssi}} <span class={{signA}} > {{rssiBias}} </span> 
+                {{rsrp}} <span class={{signB}}> {{rsrpBias}}</span> 
+                {{rsrq}} <span class={{signC}}> {{rsrqBias}} </span> 
+            
+            </span>
+            `,
+            {
+                rssi: `${c.rssi} ${getPropertyUnit("rssi")}` ?? "Value not provided ",
+                rssiBias: correctionObj?.rssi ?? "Couldn't compute bias",
+                signA: correctionObj?.rssi > 0 ? "positive" : "negative",
+                rsrp: `${c.rsrp} ${getPropertyUnit("rsrp")}` ?? "Value not provided ",
+                rsrqBias: correctionObj?.rsrp ?? "Couldn't compute bias",
+                signB: correctionObj?.rsrp ? "positive" : "negative",
+                rsrq: `${c.rsrq} ${getPropertyUnit("rsrq")}` ?? "Value not provided ",
+                rsrqBias: correctionObj?.rsrq ?? "Couldn't compute bias",
+                signC: correctionObj?.rsrq ? "positive" : "negative",
+            }
+
+        )
+
+        console.warn("restSignalDataAndCorrectionComponentIfMakesSense", restSignalDataAndCorrectionComponentIfMakesSense)
+
+
+        const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(popupDataForItem,
             {
                 title: `Measurement ${c._id}`,
                 timestamp: getNaturalLanguageDate(c.timestamp),
@@ -536,16 +594,19 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
                 asuLevel: c.asuLevel,
                 level: c.level,
                 type: c.type,
-                // restSignalData : `cqi:${c.cqi}, rsrp:${c.rsrp}, rssi:${c.rssi}`,
+                correction: !correctionObj ? "" : restSignalDataAndCorrectionComponentIfMakesSense,
                 operator: c.operatorAlphaLong,
                 bandwidth: c.bandwidth
             })
+
+
 
 
         //depending on what to display
         // CHECK that the property to be show in the visualization is in the coe
         if (!(whatToDisplay in c)) {
             // throw new Error(`unknown data attribute specified ${whatToDisplay} `)
+            console.log("what to sisplay is not in c ", c)
             return
         }
 
@@ -573,6 +634,8 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
     //add to list of layered info, so that re-rendering on change origin can move printed 
     layerGroups.push({ name: `MeasurementsForSession'${session._id}'`, layer: theseMeasurementsMapLayer })
 
+
+    console.log("finishing rendering of mesurements IDK why not showing")
     return Promise.all(renderPromises)
 }
 

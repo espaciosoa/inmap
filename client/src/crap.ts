@@ -136,7 +136,10 @@ export function getPropertyRange(signalPropertyName: NumericProperty): Range | u
  * Given a property name and a value for such property tells if it is in the range of valid values
  */
 export function isSignalPropertyInRange(signalPropertyName: NumericProperty, value: number): boolean {
-    const { min, max } = ranges.get(signalPropertyName)!!
+    const rangeMapItem = ranges.get(signalPropertyName)
+    if (!rangeMapItem)
+        return false
+    const { min, max } = rangeMapItem
     return value >= min && value <= max
 }
 

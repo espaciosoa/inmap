@@ -9,11 +9,12 @@ export const LEAFLET_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">
             <span> <span class="bold">qualityLevel</span>: {{level}}</span>
             <span> <span class="bold">signalType</span>: {{type}} </span>
             <!-- Now the optionals -->    
-            <span> {{restSignalData}}</span>
+            <span> {{correction}} </span>
     </div>
     <div class="cell-identity">
         <span> <span class="bold">Operator</span>: {{operator}} </span>
         <span> <span class="bold">Bandwidth</span>: {{bandwidth}} </span>
+        
     </div> 
 </div>
 <footer>
@@ -21,3 +22,6 @@ export const LEAFLET_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">
 </footer>
 </div>`
 
+// rssi
+// rsrp
+// rsrq

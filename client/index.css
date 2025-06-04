@@ -36,7 +36,7 @@ body {
 }
 
 
-.text-big{
+.text-big {
     font-size: 1.5em;
 }
 
@@ -251,9 +251,9 @@ a:visited {
 }
 
 
-.session-choose{
-    display:grid;
-    gap:1em;
+.session-choose {
+    display: grid;
+    gap: 1em;
     align-items: center;
     justify-items: center;
 }
@@ -272,7 +272,7 @@ input[type="checkbox"] {
 
 .session-name {
     font-style: italic;
-    font-weight: bold;  
+    font-weight: bold;
     color: #5ad8ff;
 }
 
@@ -757,10 +757,10 @@ section.collapsible:not(.collapsed)::after {
     background-color: #3d3d3d4f;
 
     h2 {
-        all:unset;
+        all: unset;
         text-align: center;
         margin: 0 1em;
-        padding:1em 0;
+        padding: 1em 0;
         font-size: 2em;
     }
 
@@ -812,11 +812,19 @@ section.collapsible:not(.collapsed)::after {
 }
 
 
-.inline-image-group{
+.inline-image-group {
     display: flex;
     justify-content: space-evenly;
 }
 
-.cropped-circle{
+.cropped-circle {
     border-radius: 50%;
+}
+
+.positive {
+    color: #17b117
+}
+
+.negative {
+    color: red;
 }

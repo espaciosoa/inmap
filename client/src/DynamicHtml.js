@@ -72,7 +72,7 @@ export function showStateInformationSection(state) {
                 <span class="room-name">{{roomName}}</span>
                 <span class="room-id">{{roomId}}</span>
             </h2>
-            <h3 > Session/s: </h3>
+            <h3> Session/s: </h3>
                 <div class="sessions-displayed-list"> 
                     <!-- Dynamic filling (list of sessions being displayed)-->
                 <div class="sessions-displayed-list"> 
