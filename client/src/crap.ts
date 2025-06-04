@@ -150,10 +150,17 @@ export function getFilterablePropertiesList(type: "5G" | "4G"): Array<string> {
     const FourG_Only_Props = ["cqi", "cqiTableIndex", "rsrp", "rsrq", "rssi", "rssnr"]
     const FiveG_Only_Props = ["csiRsrp", "csiCqiTableIndex", "csiRsrq", "csiSinr", "ssRsrp", "ssRsrq", "ssSinr"]
 
+    const Exclude_Props = ["cqi", "cqiTableIndex", "csiCqiTableIndex"]
+
     if (type === "4G")
-        return units.keys().toArray().filter((v) => !FiveG_Only_Props.includes(v))
+        return units.keys().toArray()
+            .filter((v) => !FiveG_Only_Props.includes(v))
+            .filter((v) => !Exclude_Props.includes(v))
+
     else if (type === "5G")
-        return units.keys().toArray().filter((v) => !FourG_Only_Props.includes(v))
+        return units.keys().toArray()
+            .filter((v) => !FourG_Only_Props.includes(v))
+            .filter((v) => !Exclude_Props.includes(v))
     else
         throw new Error("Unsupported type passed to getFilterablePropertiesList")
 }

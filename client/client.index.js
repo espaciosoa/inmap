@@ -248,7 +248,7 @@ if (
     )
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(
-        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type),
+        getFilterablePropertiesList(myState.activeMeasurements[0]?.fullCellSignalStrength?.type),
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
 
@@ -295,7 +295,7 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
             document.querySelector("#map"),
             "Select some data so that the map can plot measurements ")
         mapAllowInteraction(map, false)
-        showMeasurementsAsTable(MEASUREMENTS_DIV) 
+        showMeasurementsAsTable(MEASUREMENTS_DIV)
         return
     }
     else {
@@ -426,3 +426,13 @@ map.on("dblclick", (e) => {
 
     console.groupEnd()
 })
+
+
+
+document.querySelectorAll(".collapsible").forEach(element => {
+    element.addEventListener("click", () => {
+        alert('should toggle collapse')
+        element.classList.toggle('collapsed')
+    })
+
+});

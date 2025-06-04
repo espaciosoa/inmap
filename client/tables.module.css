@@ -96,6 +96,23 @@ tbody tr:nth-child(even) {
 
 
 
+.inner-object .kv {
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    margin-bottom: 0.2em;
+}
+
+.inner-object.val {
+    word-wrap: break-word;
+}
+
+
+
+.inner-object .key {
+    font-weight: bold;
+}
 
 /* Used to debug the showing of objects recursively */
 .inner-object .inner-object {
@@ -138,6 +155,7 @@ tbody tr:nth-child(even) {
 .editable-cell {
     input {
         width: -webkit-fill-available;
+        max-width: 100%;
     }
 }
 

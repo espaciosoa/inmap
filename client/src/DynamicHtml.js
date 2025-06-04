@@ -345,7 +345,7 @@ function createTableFromObject(data, lastKey = "", opts = {
                 kvItemHTML.appendChild(htmlEditableNode)
             }
             else {
-                kvItemHTML.textContent = `${key} : ${valueAux}`;
+                kvItemHTML.appendChild(JSUtils.replaceTemplatePlaceholdersAndBindHandlers(`<p class="kv" ><span class="key">{{key}}:</span>  <span class="val">{{actualVal}} </span></p>`, { key: key, actualVal: valueAux }))
             }
         }
 
@@ -489,6 +489,8 @@ function createTableFromArray(data,
         // Add buttons per row
         if (opts.editableKeys && opts.editableKeys.length > 0) {
 
+            const td = document.createElement('td');
+            td.classList.add("table-cell")
 
             const replacements = {
                 saveText: "Update 💾",
@@ -515,7 +517,8 @@ function createTableFromArray(data,
                 )
             )
             JSUtils.bindHandlers(node, replacements)
-            row.appendChild(node)
+            td.replaceChildren(node)
+            row.appendChild(td)
         }
 
 

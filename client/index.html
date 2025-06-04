@@ -44,20 +44,33 @@
     <main>
 
 
-        <section>
-            About this application:
-        
-            - Visualize indoors-taken 5G measurements made for a measured environment, that we refer to as room in the application.
-            - 
-            - Manually adjust the world position (lat, lon) used as local coordinates origin to
-            - Trigger estimations based on existing map data  (use double click to )
-            - Switch between different tile providers for the underlying map displayed.
-            
+        <section class="howto-section collapsible" >
+            <h2>How to ❓</h2>
+            <ul class="feature-list">
+                <li>Visualize 5G measurements taken indoors within a defined environment (referred to as a "room" in the
+                    application). A heatmap is generated using data collected from both mobile devices and Raspberry Pi
+                    units configured for high-precision measurements.</li>
+                <li>Select which measurement sessions to display by using the checkboxes available in the "Measured
+                    Sessions" selector panel.</li>
+                <li>Inspect detailed information for a specific measurement session and optionally enable correction of
+                    Pi-based measurements to estimate potential measurement error, using the Raspberry Pi as a reference
+                    device. This can be toggled via the slider in the session's popup.</li>
+                <li>Switch between different measurement parameters to display on the map using the dropdown menu
+                    located on the left-hand side of the map view.</li>
+                <li>Access session details by clicking on the session markers on the map, which represent the global
+                    coordinate origin for each session.</li>
+                <li><img class="inline-image" src="/assets/how-to/zoom.png"> Use zoom and pan gestures to navigate and explore the map-based visualization. </li>
+                <li>Double-click on any point of the map to trigger estimations based on the currently available
+                    measurement data.</li>
+                <li>Manually edit the global origin coordinates (latitude and longitude) of a session via the tables
+                    below if improved accuracy is required for your application.</li>
+                <li>Delete individual measurements or entire measurement sessions to maintain a clean and relevant
+                    dataset.</li>
+                <li>Toggle between different base map tile providers via the map settings menu located in the top-right
+                    corner of the map interface.</li>
+            </ul>
+
         </section>
-
-
-
-
 
         <form class="what-to-plot-selection">
             <div class="border room-choose-container scrollable-max-size">
