@@ -25,7 +25,7 @@ import {
 import { mapAllowInteraction } from "./src/map.interaction.control.js"
 import { initPopup } from "./src/popup.js"
 
-import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "./dist/crap.js"
+import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue } from "./dist/typed-functions.js"
 import { PageState } from "./dist/PageState.js"
 import { initLeafletMapWithProviders } from "./src/leaflet.map.utils.js"
 import { defaultLatLon, renderMap, layerGroups } from "./src/visualization.render.js"

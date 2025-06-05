@@ -137,12 +137,20 @@ export function getPropertyRange(signalPropertyName: NumericProperty): Range | u
  */
 export function isSignalPropertyInRange(signalPropertyName: NumericProperty, value: number): boolean {
     const rangeMapItem = ranges.get(signalPropertyName)
-    if (!rangeMapItem)
+    if (!rangeMapItem) {
+        console.error(`${signalPropertyName} is not listed as a NumericProperty`)
         return false
+    }
     const { min, max } = rangeMapItem
     return value >= min && value <= max
 }
 
+export function getSignalPropertyInRangeOrDefault(signalPropertyName: NumericProperty, value: number, defaultValue: any) {
+    if(isSignalPropertyInRange(signalPropertyName,value))
+        return value
+    else
+        return defaultValue
+}
 
 
 

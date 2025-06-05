@@ -815,6 +815,7 @@ section.collapsible:not(.collapsed)::after {
 .inline-image-group {
     display: flex;
     justify-content: space-evenly;
+    align-items: center;
 }
 
 .cropped-circle {
@@ -824,7 +825,13 @@ section.collapsible:not(.collapsed)::after {
 .positive {
     color: #17b117
 }
+.positive::before{
+    content: "+";
+}
 
 .negative {
     color: red;
+}
+.negative::before{
+    content: "-";
 }

@@ -1,5 +1,5 @@
 import { EventManager } from "./EventManager.js"
-import { NumericProperty } from "./crap.js"
+import { NumericProperty } from "./typed-functions.js"
 
 
 

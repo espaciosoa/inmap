@@ -9,7 +9,7 @@ export const LEAFLET_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">
             <span> <span class="bold">qualityLevel</span>: {{level}}</span>
             <span> <span class="bold">signalType</span>: {{type}} </span>
             <!-- Now the optionals -->    
-            <span> {{correction}} </span>
+            {{correction}}
     </div>
     <div class="cell-identity">
         <span> <span class="bold">Operator</span>: {{operator}} </span>

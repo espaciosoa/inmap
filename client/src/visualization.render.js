@@ -8,7 +8,11 @@ import {
     from "./geo.utils.js"
 import { estimateValueIDW_LatLong, generatePointsInRadius, getLatLongBoundingBox } from "./interpolations.js"
 import { getNaturalLanguageDate } from "./converters.js"
-import { getPropertyUnit, getFilterablePropertiesList, getNormalizedValueInRange, getPropertyColorForValue, getPropertyRange, isSignalPropertyInRange } from "../../dist/crap.js"
+import {
+    getPropertyUnit, getFilterablePropertiesList,
+    getNormalizedValueInRange, getPropertyColorForValue, getPropertyRange, isSignalPropertyInRange,
+    getSignalPropertyInRangeOrDefault
+} from "../../dist/typed-functions.js"
 
 import { SwitchComponent } from "./components/switch.component.js"
 
@@ -255,15 +259,15 @@ export async function renderMap(map,
                         endCorrectionObject = {
                             rssi:
                                 //Check that if any of them is not range, show NAN
-                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rssi, "rssi") || !isSignalPropertyInRange(piCorrectionPoints[0].rssi, "rssi") ?
-                                    Number.NaN : closestRealPointToPiMeasurement.rssi - piCorrectionPoints[0].rssi,
+                                !isSignalPropertyInRange("rssi", closestRealPointToPiMeasurement.rssi) || !isSignalPropertyInRange("rssi", piCorrectionPoints[0].rssi) ?
+                                    Number.NaN : linearCorrect(closestRealPointToPiMeasurement.rssi, piCorrectionPoints[0].rssi),
                             rsrp:
                                 //Check that if any of them is not range, show NAN
-                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rsrp, "rsrp") || !isSignalPropertyInRange(piCorrectionPoints[0].rsrp, "rsrp") ?
-                                    Number.NaN : closestRealPointToPiMeasurement.rsrp - piCorrectionPoints[0].rsrp,
+                                !isSignalPropertyInRange("rsrp", closestRealPointToPiMeasurement.rsrp) || !isSignalPropertyInRange("rsrp", piCorrectionPoints[0].rsrp) ?
+                                    Number.NaN : linearCorrect(closestRealPointToPiMeasurement.rsrp, piCorrectionPoints[0].rsrp),
                             rsrq:
-                                !isSignalPropertyInRange(closestRealPointToPiMeasurement.rsrq, "rsrq") || !isSignalPropertyInRange(piCorrectionPoints[0].rsrq, "rsrq") ?
-                                    Number.NaN : closestRealPointToPiMeasurement.rsrq - piCorrectionPoints[0].rsrq,
+                                !isSignalPropertyInRange("rsrq", closestRealPointToPiMeasurement.rsrq) || !isSignalPropertyInRange("rsrq", piCorrectionPoints[0].rsrq) ?
+                                    Number.NaN : linearCorrect(closestRealPointToPiMeasurement.rsrq - piCorrectionPoints[0].rsrq),
                         }
 
                     }
@@ -559,31 +563,72 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
         const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
 
 
+        const getSign = (val) => {
+            if (!val)
+                return ""
+            if (! typeof value === 'number')
+                return ""
+            if (Number.isNaN(val))
+                return ""
 
-        const restSignalDataAndCorrectionComponentIfMakesSense = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(`
+            if (val === 0)
+                return "zero"
+            if (val > 0)
+                return "positive"
+            if (val < 0)
+                return "negative"
+        }
+
+        const getActualNumberOrValue = (val, defaultVal) => {
+            if (!val)
+                return defaultVal
+            if (! typeof value === 'number')
+                return defaultVal
+            if (Number.isNaN(val))
+                return defaultVal
+            if (!Number.isFinite(val))
+                return defaultVal
+
+            return val.toFixed(2)
+        }
+
+
+        let restSignalDataAndCorrectionComponentIfMakesSense = ""
+
+        if (correctionObj !== null)
+            restSignalDataAndCorrectionComponentIfMakesSense = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(`
             <span>  
-            
-                {{rssi}} <span class={{signA}} > {{rssiBias}} </span> 
-                {{rsrp}} <span class={{signB}}> {{rsrpBias}}</span> 
-                {{rsrq}} <span class={{signC}}> {{rsrqBias}} </span> 
+
+               <span class="bold"> rssi: </span> {{rssi}} <span class={{signA}} > {{rssiBias}} (Pi)</span> <br/>
+               <span class="bold"> rsrp: </span>  {{rsrp}} <span class={{signB}} > {{rsrpBias}} (Pi)</span> <br/>
+               <span class="bold"> rsrq: </span>  {{rsrq}} <span class={{signC}} > {{rsrqBias}} (Pi)</span> 
             
             </span>
             `,
-            {
-                rssi: `${c.rssi} ${getPropertyUnit("rssi")}` ?? "Value not provided ",
-                rssiBias: correctionObj?.rssi ?? "Couldn't compute bias",
-                signA: correctionObj?.rssi > 0 ? "positive" : "negative",
-                rsrp: `${c.rsrp} ${getPropertyUnit("rsrp")}` ?? "Value not provided ",
-                rsrqBias: correctionObj?.rsrp ?? "Couldn't compute bias",
-                signB: correctionObj?.rsrp ? "positive" : "negative",
-                rsrq: `${c.rsrq} ${getPropertyUnit("rsrq")}` ?? "Value not provided ",
-                rsrqBias: correctionObj?.rsrq ?? "Couldn't compute bias",
-                signC: correctionObj?.rsrq ? "positive" : "negative",
-            }
 
-        )
+                {
+                    rssi: `${getSignalPropertyInRangeOrDefault("rssi", c.rssi, "Value not in range")} ${getPropertyUnit("rssi")}` ||
+                        "Value not provided ",
+                    rssiBias:
+                        getActualNumberOrValue(correctionObj?.rssi, "Couldn't compute bias"),
+                    signA:
+                        getSign(correctionObj?.rssi),
+                    rsrp: `${getSignalPropertyInRangeOrDefault("rsrp", c.rsrp, "Value not in range")} ${getPropertyUnit("rsrp")}` ||
+                        "Value not provided ",
+                    rsrpBias:
+                        getActualNumberOrValue(correctionObj?.rsrp, "Couldn't compute bias"),
+                    signB:
+                        getSign(correctionObj?.rsrp),
+                    rsrq: `${getSignalPropertyInRangeOrDefault("rsrq", c.rsrq, "Value not provided")} ${getPropertyUnit("rsrq")}` ||
+                        "Value not provided ",
+                    rsrqBias:
+                        getActualNumberOrValue(correctionObj?.rsrq, "Couldn't compute bias"),
+                    signC: getSign(correctionObj?.rsrq)
+                }
 
-        console.warn("restSignalDataAndCorrectionComponentIfMakesSense", restSignalDataAndCorrectionComponentIfMakesSense)
+            )
+
+        // console.warn("restSignalDataAndCorrectionComponentIfMakesSense", restSignalDataAndCorrectionComponentIfMakesSense)
 
 
         const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(popupDataForItem,
@@ -802,7 +847,7 @@ function linearCorrect(refValue, toCorrectValue) {
     return bias
 }
 
-function scaleCorrect(refValue, toCorrectValue) {
+function scaleCorrect(toCorrectValue, refValue) {
 
     const scaleBias = refValue / toCorrectValue;
     const corrected = toCorrectValue * scaleBias
