@@ -38,6 +38,40 @@ async function removeRoomCascade(id) {
   }
 }
 
+// borrar rooms vacías
+async function removeUnlinkedData() {
+
+
+  const allRooms = await Room.find({});
+
+
+  const result = {}
+
+  await Promise.all(allRooms.map(async room => {
+
+
+    const numSessionsRoom = await MeasurementSession.countDocuments({ roomId: room._id })
+    //get number of measurements 
+    const numMeasurementsRoom = await RoomMeasurement.countDocuments({ roomId: room._id })
+
+
+    //Si no hay sesiones 
+    if (numSessionsRoom === 0 && numMeasurementsRoom > 0) {
+      result[`${room.name}`] = {}
+      console.log(`Found a room with no sessions. Deleting all measurements and room for cleanup '${room.name}'  `)
+      result[`${room.name}`].resultDeleteSessions = await MeasurementSession.deleteMany({ roomId: room._id }).deletedCount
+      result[`${room.name}`].resultDeleteMeasurements = await RoomMeasurement.deleteMany({ roomId: room._id }).deletedCount
+      result[`${room.name}`].resultDeleteRoom = await room.deleteOne()
+    }
+  }
+  ));
+
+  return result
+
+}
+
+
+
 // ✅ TESTED
 async function removeSessionCascade(id) {
 
@@ -183,7 +217,20 @@ function askConfirmation(prompt) {
   console.log("db.maintenance.js by @alreylz")
 
   const operations = [
-    { keyword: "delall", description: "Remove everything from the database", handler: removeAll },
+    {
+      keyword: "delall", description: "Remove everything from the database", handler: () => {
+        removeAll()
+          .then((result) => {
+            console.log(result)
+          })
+          .catch((e) => {
+            console.error(e)
+            process.exit(1)
+          }).finally((_) => {
+            process.exit(0)
+          })
+      }
+    },
     {
       keyword: "delroom",
       description: "Delete a room by name (and all linked data)",
@@ -215,6 +262,15 @@ function askConfirmation(prompt) {
             return listUselessData(yn)
           })
           .catch((err) => { console.error(err.message); process.exit(1) })
+          .finally((_) => process.exit(0))
+      }
+    },
+    {
+      keyword: "remunlinked",
+      description: "Removes data for empty rooms as well as the room itself",
+      handler: () => {
+        removeUnlinkedData().then((result) => console.log(result))
+          .catch((err) => { console.error(err); process.exit(1) })
           .finally((_) => process.exit(0))
       }
     },

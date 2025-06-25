@@ -188,7 +188,7 @@ export function showSessionsAsCheckboxes(parent, myState, dataArray, selected = 
 
 
 
-export function showNumericPropertiesAsSelect(properties, selected, onChangeSelected) {
+export function showNumericPropertiesAsSelect(properties, selected, onChangeSelected, visibile = true) {
 
     //given the points to be printed, display all the possible keys that can be shown in the map
 
@@ -201,6 +201,14 @@ export function showNumericPropertiesAsSelect(properties, selected, onChangeSele
 
 
     const selectPadre = document.querySelector("#property-select-menu");
+
+    const overlayMenu = document.querySelector("#map-menu-overlay");
+    if (visibile) {
+        overlayMenu.classList.remove('hidden')
+    }
+    else {
+        overlayMenu.classList.add('hidden')
+    }
 
 
     const childrenOptionsArray = []
@@ -230,9 +238,6 @@ export function showNumericPropertiesAsSelect(properties, selected, onChangeSele
 
     selectPadre.replaceChildren(...childrenOptionsArray);
 
-    // Seleccionar el select padre y añadir un hijo por cada propiedad diferente de la lista
-
-    // const selectPropertyComponent_HTMLTemplate = 
 
 }
 

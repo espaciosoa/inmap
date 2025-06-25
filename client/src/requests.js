@@ -1,5 +1,6 @@
-const API_BASE_URL = "https://measurements.espaciosoa.com/v1/API/"
-// const API_BASE_URL = "https://127.0.0.1:8443/v1/API/"
+// const API_BASE_URL = "https://measurements.espaciosoa.com/v1/API/"
+const API_BASE_URL = "https://127.0.0.1:8443/v1/API/"
+// const API_BASE_URL = "https://test.alreylz.me/v1/API/"
 
 
 const AUTH_TOKEN  ="WEDONTUSETOKENSAROUNDHERE"

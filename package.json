@@ -9,6 +9,7 @@
     "prod": "NODE_ENV=production node index.js",
     "compile": "NODE_ENV=development npx tsc -p ./client/ ",
     "client-dev": "NODE_ENV=development npx tsc -p ./client/ --watch",
+    "db-maintenance" : "node db.maintenance.js",
     "dev:debug": "NODE_ENV=development npx nodemon --inspect index.js",
     "deploy": "./test.sh --environment production  ",
     "test": "echo \"Error: no test specified\" && exit 1"

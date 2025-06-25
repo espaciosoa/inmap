@@ -62,6 +62,8 @@ export function initPopup() {
             error: ERROR_SVG,
             info: INFO_SVG
         }
+        //Disallow overflow
+        document.body.style.overflow = 'hidden';
 
         POPUP_SCREEN.classList.remove(...msgTypeClasses)
         Object.entries(svgElems).forEach((elem) => {
@@ -97,6 +99,8 @@ export function initPopup() {
     }
     function hidePopup() {
         POPUP_SCREEN_TEXT.innerText = ""
+         //Disallow overflow
+        document.body.style.overflow = 'auto';
         POPUP_SCREEN.classList.remove("open")
         console.log("Popup closed")
     }
@@ -104,8 +108,25 @@ export function initPopup() {
 
 
     function destroyPopup() {
+        document.body.style.overflow = 'auto';
         popupNode.remove();
     }
 
-    return [showPopup, hidePopup, destroyPopup];
+
+
+
+    function showPopupForT(text, type, seconds) {
+        showPopup(text, type)
+        setTimeout(() => {
+            hidePopup()
+        }, seconds * 1000)
+    }
+
+    async function showPopupWhile(text, type, asyncFunction) {
+        showPopup(text, type)
+        await asyncFunction
+        hidePopup()
+    }
+
+    return { showPopup, hidePopup, destroyPopup, showPopupWhile, showPopupForT };
 }

@@ -125,7 +125,7 @@ export async function renderMap(map,
     whatToDisplay = 'level') {
 
 
-    const [showPopup, hidePopup, destroyPopup] = initPopup()
+    const { showPopup, hidePopup, destroyPopup } = initPopup()
 
 
     const SHOW_BBOX = false
@@ -635,13 +635,13 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
             {
                 title: `Measurement ${c._id}`,
                 timestamp: getNaturalLanguageDate(c.timestamp),
-                dbm: c.dbm,
-                asuLevel: c.asuLevel,
-                level: c.level,
-                type: c.type,
+                dbm: getSignalPropertyInRangeOrDefault("dbm", c.dbm, "Invalid"),
+                asuLevel: getSignalPropertyInRangeOrDefault("asuLevel", c.asuLevel, "Invalid"),
+                level: getSignalPropertyInRangeOrDefault("level", c.level, "Invalid"),
+                type: c.type ?? "Unknown",
                 correction: !correctionObj ? "" : restSignalDataAndCorrectionComponentIfMakesSense,
-                operator: c.operatorAlphaLong,
-                bandwidth: c.bandwidth
+                operator: c.operatorAlphaLong ?? "Unknown",
+                bandwidth: c.bandwidth ?? "Unknown"
             })
 
 
@@ -649,9 +649,30 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
 
         //depending on what to display
         // CHECK that the property to be show in the visualization is in the coe
-        if (!(whatToDisplay in c)) {
+        if (!(whatToDisplay in c)  || !getSignalPropertyInRangeOrDefault(whatToDisplay,c[whatToDisplay],false)) {
             // throw new Error(`unknown data attribute specified ${whatToDisplay} `)
-            console.log("what to sisplay is not in c ", c)
+            console.log("what to display is not in c (this point can't display in this case) ", c)
+
+            //RENDER INVALID POINTS
+            const promise = new Promise(resolve => {
+                setTimeout(() => {
+
+                    //Represents a measurement
+                    let measurementPointInMap = L.circle(latLongCoords, {
+                        className: 'animated-marker',
+                        color: "black",
+                        fillOpacity: 0.5,
+                        radius: 0.05
+                    })
+                    .bindTooltip(` Poor quality measurement point `)
+                    .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
+
+                    resolve();
+                }, 1)
+            })
+
+            renderPromises.push(promise);
+
             return
         }
 
@@ -667,10 +688,10 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
                     fillOpacity: 0.5,
                     radius: 0.05
                 })
-                    .bindTooltip(`${whatToDisplay} :  ${c[whatToDisplay]} ${getPropertyUnit(whatToDisplay)}`)
+                    .bindTooltip(`${whatToDisplay} :  ${getSignalPropertyInRangeOrDefault(whatToDisplay, c[whatToDisplay], "Invalid")} ${getPropertyUnit(whatToDisplay)}`)
                     .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
 
-                resolve(); // mark this point as rendered
+                resolve();
             }, 1)
         })
 
@@ -817,23 +838,6 @@ function renderHeatmap(map, sessions, nonPiMeasurementPoints, valueKey /* what t
 }
 
 
-
-
-
-
-function correctedValuesWithPiMeasurementForSession(session, refMeasurement, measurements) {
-
-    // get bias between refMeasurement and closest point
-
-    measurements
-    const bias = linearCorrect(refMeasurement, measurements)
-
-
-
-    return
-
-
-}
 
 
 

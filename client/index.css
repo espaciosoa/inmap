@@ -34,6 +34,11 @@ body {
     background: url(./default-image.jpg) cover;
     color: white;
 }
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
 
 
 .text-big {
@@ -292,8 +297,6 @@ input[type="checkbox"] {
 }
 
 
-
-
 .design-only {
     display: none;
 
@@ -519,27 +522,27 @@ body:has(.my-load-popup.open),
 
 
 .modal-bg-page-cover {
-    display: block;
+    /* display: block; */
     position: fixed;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100vw;
     height: 100vh;
-    /* position: fixed;
-    top: 0%;
-    left: 0%;
-    right: 0%;
-    bottom: 0%;
-    height: 100%; */
-    background-color: #3077715e;
-    filter: blur(10px);
+    /* Use 100vh to ensure full viewport height */
+
+    background-color: rgba(48, 119, 113, 0.37);
+   
+
+    backdrop-filter: blur(5px);
     z-index: 9999;
 }
 
 
 
 .my-load-popup {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -812,6 +815,11 @@ section.collapsible:not(.collapsed)::after {
 }
 
 
+.hidden {
+    display: none !important;
+}
+
+
 .inline-image-group {
     display: flex;
     justify-content: space-evenly;
@@ -825,13 +833,15 @@ section.collapsible:not(.collapsed)::after {
 .positive {
     color: #17b117
 }
-.positive::before{
+
+.positive::before {
     content: "+";
 }
 
 .negative {
     color: red;
 }
-.negative::before{
+
+.negative::before {
     content: "-";
 }

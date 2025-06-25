@@ -30,17 +30,25 @@ import { PageState } from "./dist/PageState.js"
 import { initLeafletMapWithProviders } from "./src/leaflet.map.utils.js"
 import { defaultLatLon, renderMap, layerGroups } from "./src/visualization.render.js"
 
-const [showPopup, hidePopup, destroyPopup] = initPopup()
+const { showPopup, hidePopup, destroyPopup, showPopupForT } = initPopup()
 
 showPopup("Loading initial data from API", "load")
 
 console.groupCollapsed("API Rest Data first load of Rooms: 📱📏📶📱📏📶📱📏📶")
 showPopup("Loading initial rooms", "load")
 const allRooms = await getRooms();
-destroyPopup()
+
 console.log("🏠 ROOMS ", allRooms);
 console.groupEnd()
 
+
+//add check no rooms
+if (!allRooms || allRooms.length < 1) {
+    showPopupForT("No rooms in db, create some before trying to visualize things", "error", 3)
+}
+else {
+    // destroyPopup()
+}
 
 
 
@@ -51,7 +59,8 @@ let myState = null
 
 try {
 
-    const DEFAULT_ROOM_IDX = 13 //allRooms.length - 1
+
+    const DEFAULT_ROOM_IDX = allRooms.length - 1 //allRooms.length - 1
 
     const sessionsForDefaultRoom = (await getSessionsForRoom(allRooms[DEFAULT_ROOM_IDX]._id)).data
     console.log("📱📏 SESSIONS ", sessionsForDefaultRoom)
@@ -73,7 +82,7 @@ catch (error) {
 // SUPER IMPORTANT
 // FETCHING  FUNCTIONS
 const fetchMeasurementsIntoState = async () => {
-    const [showPopup, hidePopup, destroyPopup] = initPopup()
+    const { showPopup, hidePopup, destroyPopup } = initPopup()
     showPopup("Loading measurements...", "load")
     const activeSessionIds = myState.activeSessions.map(s => s._id)
     const measurementArrays = await Promise.all(
@@ -86,7 +95,7 @@ const fetchMeasurementsIntoState = async () => {
 }
 
 const fetchSessionsIntoState = async () => {
-    const [showPopup, hidePopup, destroyPopup] = initPopup()
+    const { showPopup, hidePopup, destroyPopup } = initPopup()
     showPopup("Loading sessions...", "load")
     const associatedSessionsFromEndpoint = (await getSessionsForRoom(myState.activeRoom._id)).data
     myState.activeSessions = associatedSessionsFromEndpoint
@@ -246,13 +255,25 @@ if (
         0,
         myState.visualizingProperty
     )
+
+    let filterableProps = null
+    try {
+        filterableProps = getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type)
+    }
+    catch (err) {
+        console.warn("Couln't get filterable properties because of poor measurement (filterableProps) will be the default")
+        const { showPopupForT } = initPopup()
+        showPopupForT("Some of the measurements of this room are incomplete or too poor", "info", 3)
+        destroyPopup()
+    }
+
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(
-        getFilterablePropertiesList(myState.activeMeasurements[0]?.fullCellSignalStrength?.type),
+        filterableProps ?? ["Not applicable"],
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
-
-        }
+        },
+        filterableProps != null
     )
 }
 else {
@@ -303,12 +324,25 @@ myState.subscribe("onMeasurementsChanged", (activeMeasurements) => {
         mapAllowInteraction(map, true)
     }
 
+
+    let filterableProps = null
+    try {
+        filterableProps = getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type)
+    }
+    catch (err) {
+
+        const { showPopupForT } = initPopup()
+        showPopupForT("Some of the measurements of this room are incomplete or too poor", "info", 3)
+        destroyPopup()
+    }
+
     //This needs to be called when the map is initialized with data
     showNumericPropertiesAsSelect(
-        getFilterablePropertiesList(myState._activeMeasurements[0].fullCellSignalStrength?.type),
+        filterableProps ?? ["None"],
         myState.visualizingProperty, (value) => {
             myState.visualizingProperty = value
-        }
+        },
+        filterableProps != null
     )
 
     showMeasurementsAsTable(MEASUREMENTS_DIV,
