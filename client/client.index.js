@@ -47,7 +47,7 @@ if (!allRooms || allRooms.length < 1) {
     showPopupForT("No rooms in db, create some before trying to visualize things", "error", 3)
 }
 else {
-    // destroyPopup()
+    destroyPopup()
 }
 
 

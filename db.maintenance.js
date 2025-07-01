@@ -24,6 +24,39 @@ async function removeRoomByNameCascade(name) {
 }
 
 
+async function removeAllRoomsExceptCascade(blacklist) {
+  const rooms = await Room.find({})
+
+  if (!rooms) {
+    return
+  }
+
+
+  let deletedMeasurementsResult, deletedSessionsResult, deletedRoomResult;
+  for (const room of rooms) {
+    if (!blacklist.includes(room.name)) {
+      console.log("About to remove room and all its related data", room.name)
+      deletedMeasurementsResult = await RoomMeasurement.deleteMany({ roomId: room._id })
+      deletedSessionsResult = await MeasurementSession.deleteMany({ roomId: room._id })
+      deletedRoomResult = await Room.deleteOne({ _id: room._id })
+    }
+    else {
+      console.log(`Purposefully not removing room with name  ${room.name}`)
+    }
+
+  }
+
+
+  return {
+    deletedMeasurements: deletedMeasurementsResult?.deletedCount ?? 0,
+    deletedSessions: deletedSessionsResult?.deletedCount ?? 0,
+    deletedRooms: deletedRoomResult?.deletedCount ?? 0
+  }
+}
+
+
+
+
 async function removeRoomCascade(id) {
 
   const deletedMeasurementsResult = await RoomMeasurement.deleteMany({ roomId: id })
@@ -243,6 +276,17 @@ function askConfirmation(prompt) {
       }
     },
     {
+      keyword: "delAllroomsExcept",
+      description: "Deletes all rooms of the database except for the ones listed",
+      handler: () => {
+        return askQuestion('Introduce the names of the rooms to keep separated by comma (,): ')
+          .then((roomNamesCommaSeparated) => removeAllRoomsExceptCascade(roomNamesCommaSeparated.split(",")))
+          .then(result => console.log(result))
+          .catch((err) => { console.error(err.message); process.exit(1) })
+          .finally((_) => process.exit(0))
+      }
+    },
+    {
       keyword: "delsesh",
       description: "Delete a session by id (and all linked data)",
       handler: () => {
@@ -282,7 +326,6 @@ function askConfirmation(prompt) {
   operations.forEach((op) => {
     console.log(`"${op.keyword}" :  ${op.description}`);
   });
-
 
 
   const userOption = await askQuestion('Enter an option: ');
