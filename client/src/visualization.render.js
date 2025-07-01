@@ -107,7 +107,11 @@ const toMapPointsMapper = (measurement) => {
         //This is now passed but is a bad estimation of position
         worldCoordsNotWorking: measurement.worldCoords,
         sessionId: measurement.measurementSession,
-        measurementDevice: measurement.measurementDevice || "ANDROID_PHONE"
+        measurementDevice: measurement.measurementDevice || "ANDROID_PHONE",
+        full: {
+            ...measurement.fullCellSignalStrength,
+            ...measurement.fullCellIdentity
+        }
     }
 }
 
@@ -563,6 +567,9 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
         const popupDataForItem = LEAFLET_POPUP_HTML_TEMPLATE;
 
 
+
+
+
         const getSign = (val) => {
             if (!val)
                 return ""
@@ -630,6 +637,33 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
 
         // console.warn("restSignalDataAndCorrectionComponentIfMakesSense", restSignalDataAndCorrectionComponentIfMakesSense)
 
+        const keyValPairHTMLTemplate = `
+        <span class="kv-pair">
+            <span class="key"> {{key}} </span>
+            <span class="value"> {{value}}  </span>
+        </span>`
+
+        let keyValListHTMLTemplate = ` <div class="kv-pair-list accordion">  <!--Dynamic content -->  </div>`
+
+
+        keyValListHTMLTemplate = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(keyValListHTMLTemplate, {});
+
+        const keyValItemsAsNodes = Object.entries(c.full).map(([key, value], idx) => {
+            console.log(`${key} , ${value}`)
+            return JSUtils.replaceTemplatePlaceholdersAndBindHandlers(keyValPairHTMLTemplate,
+                {
+                    key: key,
+                    value: typeof value === 'string' ? value : JSON.stringify(value)
+                })
+        })
+
+
+        //Add as children
+        keyValItemsAsNodes.forEach((kv) => {
+            keyValListHTMLTemplate.append(kv)
+        })
+
+
 
         const popupDataForItemReplaced = JSUtils.replaceTemplatePlaceholdersAndBindHandlers(popupDataForItem,
             {
@@ -641,7 +675,24 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
                 type: c.type ?? "Unknown",
                 correction: !correctionObj ? "" : restSignalDataAndCorrectionComponentIfMakesSense,
                 operator: c.operatorAlphaLong ?? "Unknown",
-                bandwidth: c.bandwidth ?? "Unknown"
+                bandwidth: c.bandwidth ?? "Unknown",
+                clickedDropdown: (ev) => {
+                    const btn = ev.target
+                    let isAccordionContentVisible = btn.innerText.trim() === "See more" ? false : true;
+                    //Update to make visible
+                    isAccordionContentVisible = !isAccordionContentVisible
+                    btn.innerText = isAccordionContentVisible ? "See Less" : "See more";
+                    const toToggle = btn.parentNode.querySelector('.kv-pair-list');
+                    if (toToggle) {
+                        isAccordionContentVisible ?
+                            toToggle.classList.add("open") :
+                            toToggle.classList.remove("open")
+                    }
+                    else {
+                        console.error("Couldn't do things on the accordion")
+                    }
+                },
+                full: keyValListHTMLTemplate.cloneNode(true) ?? "Unknown"
             })
 
 
@@ -649,7 +700,7 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
 
         //depending on what to display
         // CHECK that the property to be show in the visualization is in the coe
-        if (!(whatToDisplay in c)  || !getSignalPropertyInRangeOrDefault(whatToDisplay,c[whatToDisplay],false)) {
+        if (!(whatToDisplay in c) || !getSignalPropertyInRangeOrDefault(whatToDisplay, c[whatToDisplay], false)) {
             // throw new Error(`unknown data attribute specified ${whatToDisplay} `)
             console.log("what to display is not in c (this point can't display in this case) ", c)
 
@@ -664,8 +715,8 @@ function renderMeasurementsForSession(theseMeasurementsMapLayer, session, measur
                         fillOpacity: 0.5,
                         radius: 0.05
                     })
-                    .bindTooltip(` Poor quality measurement point `)
-                    .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
+                        .bindTooltip(` Poor quality measurement point `)
+                        .bindPopup(popupDataForItemReplaced).addTo(theseMeasurementsMapLayer);
 
                     resolve();
                 }, 1)

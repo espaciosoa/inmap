@@ -344,7 +344,10 @@ select {
         align-items: start;
     }
 
-
+    .full-measure-detail {
+        max-width: 100%;
+        grid-column: span 2;
+    }
 
 
 
@@ -845,3 +848,41 @@ section.collapsible:not(.collapsed)::after {
 .negative::before {
     content: "-";
 }
+
+
+
+
+
+.accordion{
+    display: none;
+}
+.accordion.open{
+    display: grid;
+}
+
+.accordion-button{
+  all: unset;
+    font-weight: bold;
+    color: rgb(97, 139, 173);
+    margin: 0.3em 0;
+    padding:0.2em 1em;
+    
+}
+.accordion-button::after{
+    content: "🔻"
+}
+
+
+
+.kv-pair{
+    text-align: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.key{
+    font-weight: bold;
+}
+
+
+

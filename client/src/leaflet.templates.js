@@ -16,6 +16,10 @@ export const LEAFLET_POPUP_HTML_TEMPLATE = `<div class="tooltip-point-detail">
         <span> <span class="bold">Bandwidth</span>: {{bandwidth}} </span>
         
     </div> 
+    <div class="full-measure-detail "  >
+        <button onClick={{clickedDropdown}} class="accordion-button"> See more </button>
+        {{full}}
+    </div>
 </div>
 <footer>
     <span class="timestamp-detail"> ⌚ {{timestamp}} </span>
