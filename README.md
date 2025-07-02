@@ -1,5 +1,6 @@
-# Indoors 5G measurements mapper
-
+<div align="center" >
+  <h1> <img src="https://github.com/user-attachments/assets/3dc5878a-aafc-4b55-aa1b-b9d3039faf32"  width="40px" height="40px" /> InMap - Indoors Signal Mapper (Web visualizer)</h4>
+</div>
 
 Prototype of a Web based application that centralizes the storage of 5G measurements recorded in <b>indoors environments</b> using an Android app and a Raspberry Pi and represents the measured points and their properties in a 2D world map.
 
@@ -104,3 +105,23 @@ Let's encrpyt certificates to use ciphered traffic have been generated automatic
 
 ## Future work | ongoing improvements:
 - Properly integrating with AI for heatmap generation (it is extremely slow).
+
+
+<div align="center" >
+<img src="https://github.com/user-attachments/assets/3dc5878a-aafc-4b55-aa1b-b9d3039faf32"  width="50px" height="50px" /> <br/>
+  <h3> InMap - Indoors Signal Mapper Suite </h3>
+</div>
+<p align="center">
+<table>
+  <tr>
+    <td align="center"><img src="https://github.com/user-attachments/assets/9f964717-fbb2-4d28-ae00-e2a5c2ecc507" alt="App screenshot" /></td>
+    <td align="center"> <img src="https://github.com/user-attachments/assets/cdec1120-39aa-4181-87b6-d190dc953727" alt="Web screenshot" /> </td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/26d1bc26-7552-4698-85ee-442a08ebe180" alt="Pi-measurements screenshot" /></td>
+  </tr>
+  <tr>
+    <td align="center">🔗<a href="https://github.com/espaciosoa/inmap-app">  Android App </a></td>
+    <td align="center">🔗<a href="https://github.com/espaciosoa/inmap"> Web visualizer </a></td>
+    <td align="center">🔗<a href="https://github.com/espaciosoa/inmap-pi"> Precise measurement module for Raspberry-Pi</a></td>
+  </tr>
+</table>
+</p>
