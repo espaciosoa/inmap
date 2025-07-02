@@ -75,7 +75,7 @@ npm run client-dev
 
 <p align="center">
   <img src=".showcase/upper.png" alt="Header part" width="80%" />
-  <img src=".showcase/estimated.png" alt="Visualization Part" width="80%"  />
+  <!-- <img src=".showcase/estimated.png" alt="Visualization Part" width="80%"  /> -->
   <img src=".showcase/tables.png" alt="Tables" width="80%" />
 </p>
 
@@ -111,6 +111,8 @@ Let's encrpyt certificates to use ciphered traffic have been generated automatic
 ## Future work | ongoing improvements:
 - Properly integrating with AI for heatmap generation (it is extremely slow).
 
+
+<hr/>
 
 <div align="center" >
 <img src="https://github.com/user-attachments/assets/3dc5878a-aafc-4b55-aa1b-b9d3039faf32"  width="50px" height="50px" /> <br/>
