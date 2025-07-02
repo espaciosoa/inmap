@@ -2,6 +2,11 @@
   <h1> <img src="https://github.com/user-attachments/assets/3dc5878a-aafc-4b55-aa1b-b9d3039faf32"  width="40px" height="40px" /> InMap - Indoors Signal Mapper (Web visualizer)</h4>
 </div>
 
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/70e08b27-169b-49f5-ba34-7e43ac9360eb" width="50%"/>
+</div>
+
 Prototype of a Web based application that centralizes the storage of 5G measurements recorded in <b>indoors environments</b> using an Android app and a Raspberry Pi and represents the measured points and their properties in a 2D world map.
 
 The application allows plotting a set of different signal characteristics interactively, as well as creating performing interpolation and estimation of cell signal quality on surrounding areas.
